@@ -1,0 +1,4 @@
+GPA:2.7
+Interest1:C1
+Interest2:C2
+Interest3:B2

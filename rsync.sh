@@ -1,0 +1,1 @@
+rsync -rv --exclude ".git/" --exclude "*.gch" --exclude "*.o" * gbudiman@nunki.usc.edu:netsocket/
