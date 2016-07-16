@@ -1,11 +1,14 @@
 all: student admission department
-	g++ Student.o -o Student
+	g++ Student.o StudentParser.o -o Student
 	g++ Admission.o -o Admission
 	g++ Department.o -o Department
 
-student: Student.cpp
-	g++ -c Student.cpp Student.h main.h
+student: student_parser
+	g++ -c StudentParser.o Student.cpp Student.h main.h
 
+student_parser:
+	g++ -c StudentParser.cpp StudentParser.hpp main.h
+	
 admission: Admission.cpp
 	g++ -c Admission.cpp Admission.h main.h
 
@@ -14,3 +17,4 @@ department: Department.cpp
 
 clean:
 	rm *.o *.gch Student Admission Department *.out
+	

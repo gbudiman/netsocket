@@ -13,6 +13,14 @@
 #define PROJ_DEBUG 1
 #endif
 
+#define NUM_STUDENTS 5
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <cstring>
 #include <iostream>
+#include <fstream>
+#include <vector>
 
 #endif /* main_h */
