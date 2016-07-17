@@ -45,6 +45,9 @@ int main() {
   }
   
   for(p = servinfo; p != NULL; p = p->ai_next) {
+/////////////////////////////
+// SOCKET()
+/////////////////////////////
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
       perror("server: socket");
       continue;
@@ -54,6 +57,10 @@ int main() {
       perror("setsockopt");
       exit(1);
     }
+
+/////////////////////////////
+// BIND()
+/////////////////////////////
     
     if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);
@@ -71,6 +78,9 @@ int main() {
   
   freeaddrinfo(servinfo);
   
+/////////////////////////////
+// LISTEN()
+/////////////////////////////
   if (listen(sockfd, ADMISSION_BACKLOG) == -1) {
     perror("listen");
     exit(-1);
@@ -88,6 +98,9 @@ int main() {
   
   while(1) {
     sin_size = sizeof(their_addr);
+/////////////////////////////
+// ACCEPT()
+/////////////////////////////
     new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &sin_size);
     if (new_fd == -1) {
       perror("accept");
@@ -98,14 +111,20 @@ int main() {
               get_in_addr((struct sockaddr *) &their_addr),
               s, sizeof s);
     std::cout << "Admission Server: got connection from " << s << "\n";
-    
+
     if (!fork()) {
       close(sockfd);
+/////////////////////////////
+// SEND()
+/////////////////////////////
       if (send(new_fd, "Hello, child!", 13, 0) == -1) {
         perror("send");
       }
       
       while (1) {
+/////////////////////////////
+// RECV()
+/////////////////////////////
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
         std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
         

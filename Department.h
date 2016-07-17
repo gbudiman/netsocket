@@ -11,7 +11,7 @@
 #include "DepartmentParser.hpp"
 
 int do_work(char);
-int connect_to_admission_server(DepartmentParser*);
+int connect_to_admission_server(DepartmentParser*, char);
 int send_data_to_admission_server(int, DepartmentParser*);
 void spawn(int);
 

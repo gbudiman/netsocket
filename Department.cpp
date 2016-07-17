@@ -20,6 +20,7 @@ void *get_in_addr(struct sockaddr *sa) {
 
 int main() {
   spawn(NUM_DEPTS);
+  wait(NULL);
   
   return 0;
 }
@@ -47,7 +48,7 @@ int do_work(char d) {
   dept_name += d;
   DepartmentParser *dp = new DepartmentParser(dept_name);
   
-  int connection_status = connect_to_admission_server(dp);
+  int connection_status = connect_to_admission_server(dp, d);
   
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " returned\n";
@@ -56,12 +57,20 @@ int do_work(char d) {
   return connection_status;
 }
 
-int connect_to_admission_server(DepartmentParser *dp) {
-  int sockfd, numbytes;
+int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
+  int sockfd = 0;
+  int numbytes = 0;
   char buf[MAXDATASIZE];
   struct addrinfo hints, *servinfo, *p;
+  struct sockaddr_storage my_addr;
+  //struct sockaddr_in sa;
+  //socklen_t sa_len = sizeof(sa);
+  socklen_t my_addr_len = sizeof(my_addr);
   int rv;
-  char s[INET6_ADDRSTRLEN];
+  int peer_port;
+  char peer_ipstr[INET6_ADDRSTRLEN];
+  char host_name[MAXDATASIZE];
+  char host_ipstr[INET6_ADDRSTRLEN];
   
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
@@ -91,9 +100,21 @@ int connect_to_admission_server(DepartmentParser *dp) {
     std::cerr << "Department Client failed to connect\n";
     return 2;
   }
+
+  getpeername(sockfd, (struct sockaddr *) &my_addr, &my_addr_len);
+  if (my_addr.ss_family == AF_INET) {
+    struct sockaddr_in *sockfd = (struct sockaddr_in *) &my_addr;
+    peer_port = ntohs(sockfd->sin_port);
+    inet_ntop(AF_INET, &sockfd->sin_addr, peer_ipstr, sizeof(peer_ipstr));
+  }
   
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), s, sizeof(s));
-  std::cout << "Department Client connecting to " << s << "\n";
+  //gethostname(host_ipstr, sizeof(host_ipstr));
+  
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), host_ipstr, sizeof(host_ipstr));
+  std::cout << "Department " << dept_name
+            << " has TCP port " << peer_port
+            << " and IP " << host_ipstr << "\n";
+  //std::cout << "Department Client connecting to " << s << "\n";
   freeaddrinfo(servinfo);
   
   if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
@@ -110,11 +131,6 @@ int connect_to_admission_server(DepartmentParser *dp) {
 }
 
 int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
-//  std::string msg = "Hello Admission Server";
-//  int len = (int) strlen(msg.c_str());
-//  int bytes_sent = send(sockfd, msg.c_str(), len, 0);
-//  
-//  std::cout << bytes_sent << " bytes sent\n";
   int len;
   int bytes_sent;
   int count = 1;
@@ -124,19 +140,18 @@ int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
     
     
     sprintf(d_msg, "%s#%.1f", r->first.c_str(), r->second);
-    // std::cout << "Sending message " << d_msg << "\n";
     len = (int) strlen(d_msg);
-    bytes_sent = send(sockfd, d_msg, len, 0);
-    std::cout << bytes_sent << " bytes sent\n";
+    bytes_sent = (int) send(sockfd, d_msg, len, 0);
+    std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
     sleep(DEPT_SLEEP_BETWEEN_PROGRAM);
-    std::cout << "sleeping...\n";
+    //std::cout << "sleeping...\n";
     
     count++;
   }
   
   sprintf(d_msg, "TX_FIN");
   bytes_sent = send(sockfd, d_msg, len, 0);
-  std::cout << bytes_sent << " bytes sent\n";
+  std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
   
   std::cout << "Done transmitting!\n";
   return 0;

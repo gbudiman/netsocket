@@ -17,15 +17,16 @@
 #define NUM_DEPTS 3
 
 #define DEPT_WAIT_LIMIT_SECOND 20     // second
-#define DEPT_SLEEP_BETWEEN_PROGRAM 2  // second
+#define DEPT_SLEEP_BETWEEN_PROGRAM 1  // second
 
-#define ADMISSION_PORT "19230"
+#define ADMISSION_PORT "5553"
 #define ADMISSION_BACKLOG 24
 
 #define MAXDATASIZE 255
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <ifaddrs.h>
 #include <math.h>
 #include <netdb.h>
 #include <netinet/in.h>
