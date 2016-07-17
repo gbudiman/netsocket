@@ -10,5 +10,7 @@
 #define Department_h
 
 void do_work(char);
+int connect_to_admission_server();
+int send_data_to_admission_server(int);
 
 #endif /* Department_h */

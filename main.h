@@ -16,8 +16,21 @@
 #define NUM_STUDENTS 5
 #define NUM_DEPTS 3
 
+#define ADMISSION_PORT "19230"
+#define ADMISSION_BACKLOG 24
+
+#define MAXDATASIZE 255
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
