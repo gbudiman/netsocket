@@ -12,13 +12,13 @@
 #include "StudentParser.hpp"
 
 int main() {
-  int32_t pid[5];
+  int32_t pid[NUM_STUDENTS];
   
   for (uint32_t p = 0; p < NUM_STUDENTS; p++) {
     pid[p] = fork();
     
     if (pid[p] < 0) {
-      std::cerr << "Forking failed at iteration " << p;
+      std::cerr << "Forking failed at iteration " << p << "\n";
     } else if (pid[p] == 0) {
       do_work(p + 1);
     }

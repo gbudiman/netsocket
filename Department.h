@@ -9,5 +9,6 @@
 #ifndef Department_h
 #define Department_h
 
+void do_work(char);
 
 #endif /* Department_h */
