@@ -39,12 +39,12 @@ void DepartmentParser::parse() {
       }
     }
     
-    if (PROJ_DEBUG) {
-      std::cout << "Parsing file " << this->filepath << " completed\n";
-      for (std::map<std::string, float>::iterator r = requirements->begin(); r != requirements->end(); ++r) {
-        std::cout << r->first << ": " << r->second << "\n";
-      }
-    }
+//    if (PROJ_DEBUG) {
+//      std::cout << "Parsing file " << this->filepath << " completed\n";
+//      for (std::map<std::string, float>::iterator r = requirements->begin(); r != requirements->end(); ++r) {
+//        std::cout << r->first << ": " << r->second << "\n";
+//      }
+//    }
     
   } else {
     if (PROJ_DEBUG) {

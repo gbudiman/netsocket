@@ -11,5 +11,5 @@
 
 #include "main.h"
 
-void debug_receive_buffer(char*, int);
+std::string debug_receive_buffer(char*, int);
 #endif /* Admission_h */

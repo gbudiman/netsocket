@@ -105,23 +105,34 @@ int main() {
         perror("send");
       }
       
-      int receive_length = recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
-      debug_receive_buffer(receive_buffer, receive_length);
+      while (1) {
+        int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
+        std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
+        
+        if (strcmp(r_msg.c_str(), "TX_FIN") == 0) {
+          std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+          break;
+        }
+      }
       close(new_fd);
       exit(0);
     }
+    
     close(new_fd);
   }
   
   return 0;
 }
 
-void debug_receive_buffer(char *receive_buffer, int receive_length) {
+std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
+  std::string result = "";
   std::cout << "Received message (" << receive_length << " bytes): ";
   for (int i = 0; i < receive_length; i++) {
     printf("%c", receive_buffer[i]);
+    result += receive_buffer[i];
   }
   
   std::cout << "\n";
+  return result;
 }
 
