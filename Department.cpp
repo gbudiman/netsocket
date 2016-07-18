@@ -21,7 +21,7 @@ void *get_in_addr(struct sockaddr *sa) {
 int main() {
   spawn_iterative(NUM_DEPTS);
   // spawn_one();
-  wait(NULL);
+  // wait(NULL);
   
   return 0;
 }
@@ -31,7 +31,6 @@ void spawn_one() {
 }
 
 void spawn_iterative(int n) {
-  pid_t pid;
   for (int i = 0; i < n; i++) {
     switch(fork()) {
       case 0:
@@ -41,7 +40,8 @@ void spawn_iterative(int n) {
       case -1:
         std::cerr << "Fork error at iteration " << i << "\n";
         break;
-      default: ;
+      default:
+        break;;
     }
   }
 }
