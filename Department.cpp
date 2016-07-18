@@ -63,8 +63,6 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   char buf[MAXDATASIZE];
   struct addrinfo hints, *servinfo, *p;
   struct sockaddr_storage my_addr;
-  //struct sockaddr_in sa;
-  //socklen_t sa_len = sizeof(sa);
   socklen_t my_addr_len = sizeof(my_addr);
   int rv;
   int peer_port;
@@ -83,13 +81,13 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   
   for (p = servinfo; p != NULL; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      perror("client: socket");
+      //perror("client: socket");
       continue;
     }
     
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);
-      perror("client: connect");
+      //perror("client: connect");
       continue;
     }
     

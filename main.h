@@ -26,7 +26,6 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
-#include <ifaddrs.h>
 #include <math.h>
 #include <netdb.h>
 #include <netinet/in.h>
