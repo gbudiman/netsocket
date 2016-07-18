@@ -79,6 +79,8 @@ int main() {
     return 2;
   }
   
+  fm_self_tcp_ip(p, ADMISSION_PORT);
+  
   freeaddrinfo(servinfo);
   
 /////////////////////////////
@@ -97,7 +99,9 @@ int main() {
     exit(1);
   }
   
-  std::cout << "Admission Server: waiting for connections...\n";
+  if (PROJ_DEBUG) {
+    std::cout << "Admission Server: waiting for connections...\n";
+  }
   
   while(1) {
     sin_size = sizeof(their_addr);
@@ -110,10 +114,10 @@ int main() {
       continue;
     }
     
-    inet_ntop(their_addr.ss_family,
-              get_in_addr((struct sockaddr *) &their_addr),
-              s, sizeof s);
-    std::cout << "Admission Server: got connection from " << s << "\n";
+    
+    if (PROJ_DEBUG) {
+      std::cout << "Admission Server: got connection from " << s << "\n";
+    }
 
     if (!fork()) {
       close(sockfd);
@@ -129,12 +133,17 @@ int main() {
 // RECV()
 /////////////////////////////
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
+        char current_dept;
         
         if (receive_length > 0) {
           std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
         
           if (strcmp(r_msg.c_str(), "TX_FIN") == 0) {
-            std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+            if (PROJ_DEBUG) {
+              std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+            }
+            
+            fm_dept_completed(current_dept);
             break;
           } else {
             
@@ -144,10 +153,13 @@ int main() {
             pdm_error = process_department_message(receive_buffer, receive_length, database);
             
             if (pdm_error == 0) {
+              current_dept = receive_buffer[0];
               if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
                 perror("dept ack");
               } else {
-                std::cout << "ADM_RX_OK sent out after randomly waiting for " << rand_wait << " us\n";
+                if (PROJ_DEBUG) {
+                  std::cout << "ADM_RX_OK sent out after randomly waiting for " << rand_wait << " us\n";
+                }
               }
             }
           }
@@ -189,13 +201,56 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
 
 std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
   std::string result = "";
-  std::cout << "Received message (" << receive_length << " bytes): ";
+  
+  if (PROJ_DEBUG) {
+    std::cout << "Received message (" << receive_length << " bytes): ";
+  }
+  
   for (int i = 0; i < receive_length; i++) {
-    printf("%c", receive_buffer[i]);
+    if (PROJ_DEBUG) {
+      printf("%c", receive_buffer[i]);
+    }
     result += receive_buffer[i];
   }
   
-  std::cout << "\n";
+  if (PROJ_DEBUG) {
+    std::cout << "\n";
+  }
+  
   return result;
 }
 
+void fm_self_tcp_ip(addrinfo *p, char *port) {
+  struct sockaddr_storage my_addr;
+  char host_ip[255];
+  std::vector<std::string> *args = new std::vector<std::string>();
+  
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
+  args->push_back(host_ip);
+  args->push_back(port);
+  
+  flow_message(AMSG_P1_START, args);
+}
+
+void fm_dept_completed(char dept_name) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string dept_name_s = "";
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  flow_message(AMSG_DEPT_COMPLETED, args);
+}
+
+void flow_message(int type, std::vector<std::string>* args) {
+  switch(type) {
+    case AMSG_P1_START:
+      std::cout << "The admission office has TCP port " << args->at(0)
+      << " and IP " << args->at(1) << "\n";
+      break;
+    case AMSG_DEPT_COMPLETED:
+      std::cout << "Received the program list from " << args->at(0) << "\n";
+      break;
+    case AMSG_P1_END:
+      std::cout << "End of Phase 1 for the admission office\n";
+  }
+}
