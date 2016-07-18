@@ -10,7 +10,7 @@
 #define main_h
 
 #if !defined PROJ_DEBUG
-#define PROJ_DEBUG 1
+#define PROJ_DEBUG 0
 #endif
 
 #define NUM_STUDENTS 5
@@ -40,6 +40,7 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <map>
 

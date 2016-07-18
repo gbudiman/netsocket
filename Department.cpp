@@ -19,26 +19,20 @@ void *get_in_addr(struct sockaddr *sa) {
 }
 
 int main() {
-  // spawn_recursive(NUM_DEPTS);
   spawn_iterative(NUM_DEPTS);
+  // spawn_one();
   wait(NULL);
   
   return 0;
 }
 
+void spawn_one() {
+  do_work(0x41);
+}
+
 void spawn_iterative(int n) {
   pid_t pid;
   for (int i = 0; i < n; i++) {
-//    pid = fork();
-//    if (pid) {
-//      wait(NULL);
-//    } else if (pid == 0) {
-//      do_work(i + 0x41);
-//      exit(0);
-//    } else {
-//      std::cerr << "For error at iteration " << i << "\n";
-//    }
-    
     switch(fork()) {
       case 0:
         do_work(i + 0x41);
@@ -75,6 +69,7 @@ int do_work(char d) {
   dept_name += d;
   DepartmentParser *dp = new DepartmentParser(dept_name);
   
+  //get_self_interfaces_info();
   int connection_status = connect_to_admission_server(dp, d);
   
   if (PROJ_DEBUG) {
@@ -89,17 +84,13 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   int numbytes = 0;
   char buf[MAXDATASIZE];
   struct addrinfo hints, *servinfo, *p;
-  struct sockaddr_storage my_addr;
-  socklen_t my_addr_len = sizeof(my_addr);
   int rv;
-  int peer_port;
-  char peer_ipstr[INET6_ADDRSTRLEN];
-  char host_name[MAXDATASIZE];
-  char host_ipstr[INET6_ADDRSTRLEN];
   
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
+  
+  
   
   if ((rv = getaddrinfo("localhost", ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv) << "\n";
@@ -126,20 +117,7 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
     return 2;
   }
 
-  getpeername(sockfd, (struct sockaddr *) &my_addr, &my_addr_len);
-  if (my_addr.ss_family == AF_INET) {
-    struct sockaddr_in *sockfd = (struct sockaddr_in *) &my_addr;
-    peer_port = ntohs(sockfd->sin_port);
-    inet_ntop(AF_INET, &sockfd->sin_addr, peer_ipstr, sizeof(peer_ipstr));
-  }
-  
-  //gethostname(host_ipstr, sizeof(host_ipstr));
-  
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) p->ai_addr), host_ipstr, sizeof(host_ipstr));
-  std::cout << "Department " << dept_name
-            << " has TCP port " << peer_port
-            << " and IP " << host_ipstr << "\n";
-  //std::cout << "Department Client connecting to " << s << "\n";
+  fm_self_tcp_ip(dept_name, sockfd);
   freeaddrinfo(servinfo);
   
   if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
@@ -148,14 +126,99 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   }
   
   buf[numbytes] = '\0';
-  std::cout << "Department Client received: " << buf << "\n";
-  send_data_to_admission_server(sockfd, dp);
+  fm_self_connected(dept_name);
+  send_data_to_admission_server(dept_name, sockfd, dp);
+  fm_self_phase1_done(dept_name);
 
   close(sockfd);
   return 0;
 }
 
-int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
+void flow_message(int type, std::vector<std::string> *args) {
+  switch(type) {
+    case DMSG_P1_START:
+      std::cout << "Department " << args->at(0)
+      << " has TCP port " << args->at(1)
+      << " and IP " << args->at(2) << "\n";
+      break;
+    case DMSG_ADM_CONNECTED:
+      std::cout << "Department " << args->at(0) << " is now connected to the admission office\n";
+      break;
+    case DMSG_PROG_SENT:
+      std::cout << "Department " << args->at(0) << " has sent " << args->at(1) << " to the admission office\n";
+      break;
+    case DMSG_PROG_COMPLETED:
+      std::cout << "Updating the admission office is done for Department " << args->at(0) << "\n";
+      break;
+    case DMSG_P1_END:
+      std::cout << "End of Phase 1 for Department " << args->at(0) << "\n";
+      break;
+  }
+}
+
+void fm_self_connected(char dept_name) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string dept_name_s = "";
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  flow_message(DMSG_ADM_CONNECTED, args);
+}
+
+void fm_self_tcp_ip(char dept_name, int sockfd) {
+  struct sockaddr_storage my_addr;
+  socklen_t my_addr_len = sizeof(my_addr);
+  int peer_port;
+  std::string dept_name_s = "";
+  char peer_port_s[MAXDATASIZE];
+  char peer_ipstr[INET6_ADDRSTRLEN];
+  std::vector<std::string> *args = new std::vector<std::string>();
+
+  getpeername(sockfd, (struct sockaddr *) &my_addr, &my_addr_len);
+  if (my_addr.ss_family == AF_INET) {
+    struct sockaddr_in *sockfd = (struct sockaddr_in *) &my_addr;
+    peer_port = ntohs(sockfd->sin_port);
+    sprintf(peer_port_s, "%d", peer_port);
+    inet_ntop(AF_INET, &sockfd->sin_addr, peer_ipstr, sizeof(peer_ipstr));
+  }
+  
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  args->push_back(peer_port_s);
+  args->push_back(peer_ipstr);
+  flow_message(DMSG_P1_START, args);
+}
+
+void fm_self_program_sent(char dept_name, std::string program) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string dept_name_s = "";
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  args->push_back(program);
+  flow_message(DMSG_PROG_SENT, args);
+}
+
+void fm_self_all_program_sent(char dept_name) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string dept_name_s = "";
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  flow_message(DMSG_PROG_COMPLETED, args);
+}
+
+void fm_self_phase1_done(char dept_name) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string dept_name_s = "";
+  dept_name_s = dept_name;
+  
+  args->push_back(dept_name_s);
+  flow_message(DMSG_P1_END, args);
+}
+
+int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *dp) {
   int len = 0;
   int bytes_sent = 0;
   int count = 1;
@@ -164,20 +227,27 @@ int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
   
   for (std::map<std::string, float>::iterator r = dp->requirements->begin(); r != dp->requirements->end(); ++r) {
     
-    
     sprintf(d_msg, "%s#%.1f", r->first.c_str(), r->second);
     len = (int) strlen(d_msg);
     bytes_sent = (int) send(sockfd, d_msg, len, 0);
-    std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
-    //sleep(DEPT_SLEEP_BETWEEN_PROGRAM);
-    //std::cout << "sleeping...\n";
     
-    std::cout << "Waiting for acknowledgement from Admission Server...\n";
+    fm_self_program_sent(dept_name, r->first);
+    
+    if (PROJ_DEBUG) {
+      std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
+      std::cout << "Waiting for acknowledgement from Admission Server...\n";
+    }
+    
     while(1) {
       recv(sockfd, adm_resp, sizeof(adm_resp), 0);
       
-      std::cout << "Received " << adm_resp << "\n";
-      if (strcmp(adm_resp, "ADM_RX_OK") == 0) {
+      if (PROJ_DEBUG) {
+        std::cout << "Received " << adm_resp << "\n";
+      }
+      if (strcmp(((std::string) adm_resp).substr(0, 9).c_str(), "ADM_RX_OK") == 0) {
+        if (PROJ_DEBUG) {
+          std::cout << "ADM_RX_OK received\n";
+        }
         break;
       }
     }
@@ -187,8 +257,51 @@ int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
   
   sprintf(d_msg, "TX_FIN");
   bytes_sent = send(sockfd, d_msg, len, 0);
-  std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
   
-  std::cout << "Done transmitting!\n";
+  if (PROJ_DEBUG) {
+    std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
+    std::cout << "Done transmitting!\n";
+  }
+  
+  fm_self_all_program_sent(dept_name);
+  
   return 0;
 }
+
+//void get_self_interfaces_info() {
+//  struct ifaddrs *ifaddr, *ifa;
+//  int family, s, n;
+//  char host[NI_MAXHOST];
+//  
+//  if (getifaddrs(&ifaddr) == -1) {
+//    perror("getifaddrs");
+//  }
+//  
+//  for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+//    if (ifa->ifa_addr == NULL) {
+//      continue;
+//    }
+//    
+//    family = ifa->ifa_addr->sa_family;
+//    
+//    std::cout << ifa->ifa_name
+//              << ((family == AF_INET) ? "AF_INET" :
+//                  (family == AF_INET6) ? "AF_INET6" : "???");
+//    
+//    if (family == AF_INET || family == AF_INET6) {
+//      s = getnameinfo(ifa->ifa_addr,
+//                      (family == AF_INET) ? sizeof(struct sockaddr_in) :
+//                                            sizeof(struct sockaddr_in6),
+//                      host, NI_MAXHOST,
+//                      NULL, 0, NI_NUMERICHOST);
+//      
+//      if (s != 0) {
+//        std::cout << "getnameinfo() failed: " << gai_strerror(s);
+//      }
+//      
+//      std::cout << "Address: " << host << "\n";
+//    }
+//  }
+//  
+//  freeifaddrs(ifaddr);
+//}
