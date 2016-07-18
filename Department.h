@@ -28,7 +28,7 @@ void spawn_one();
 void get_self_interfaces_info();
 
 void flow_message(int, std::vector<std::string>*);
-void fm_self_tcp_ip(char, int);
+void fm_self_tcp_ip(char, addrinfo*, char*);
 void fm_self_connected(char);
 void fm_self_program_sent(char, std::string);
 void fm_self_all_program_sent(char);

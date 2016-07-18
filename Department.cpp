@@ -115,7 +115,7 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
     return 2;
   }
 
-  fm_self_tcp_ip(dept_name, sockfd);
+  fm_self_tcp_ip(dept_name, p, (char*) ADMISSION_PORT);
   freeaddrinfo(servinfo);
   
   if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
@@ -136,8 +136,8 @@ void flow_message(int type, std::vector<std::string> *args) {
   switch(type) {
     case DMSG_P1_START:
       std::cout << "Department " << args->at(0)
-      << " has TCP port " << args->at(1)
-      << " and IP " << args->at(2) << "\n";
+      << " has TCP port " << args->at(2)
+      << " and IP " << args->at(1) << "\n";
       break;
     case DMSG_ADM_CONNECTED:
       std::cout << "Department " << args->at(0) << " is now connected to the admission office\n";
@@ -163,28 +163,18 @@ void fm_self_connected(char dept_name) {
   flow_message(DMSG_ADM_CONNECTED, args);
 }
 
-void fm_self_tcp_ip(char dept_name, int sockfd) {
+void fm_self_tcp_ip(char dept_name, addrinfo *p, char *port) {
   struct sockaddr_storage my_addr;
-  socklen_t my_addr_len = sizeof(my_addr);
-  int peer_port;
+  char host_ip[255];
   std::string dept_name_s = "";
-  char peer_port_s[MAXDATASIZE];
-  char peer_ipstr[INET6_ADDRSTRLEN];
   std::vector<std::string> *args = new std::vector<std::string>();
-
-  getpeername(sockfd, (struct sockaddr *) &my_addr, &my_addr_len);
-  if (my_addr.ss_family == AF_INET) {
-    struct sockaddr_in *sockfd = (struct sockaddr_in *) &my_addr;
-    peer_port = ntohs(sockfd->sin_port);
-    sprintf(peer_port_s, "%d", peer_port);
-    inet_ntop(AF_INET, &sockfd->sin_addr, peer_ipstr, sizeof(peer_ipstr));
-  }
   
   dept_name_s = dept_name;
   
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
   args->push_back(dept_name_s);
-  args->push_back(peer_port_s);
-  args->push_back(peer_ipstr);
+  args->push_back(host_ip);
+  args->push_back(port);
   flow_message(DMSG_P1_START, args);
 }
 

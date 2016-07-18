@@ -43,7 +43,7 @@ int main() {
   memset(&hints, 0 ,sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG;
+  hints.ai_flags = AI_PASSIVE;
   
   if ((rv = getaddrinfo(NULL, ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
