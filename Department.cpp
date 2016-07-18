@@ -19,18 +19,45 @@ void *get_in_addr(struct sockaddr *sa) {
 }
 
 int main() {
-  spawn(NUM_DEPTS);
+  // spawn_recursive(NUM_DEPTS);
+  spawn_iterative(NUM_DEPTS);
   wait(NULL);
   
   return 0;
 }
 
-void spawn(int n) {
+void spawn_iterative(int n) {
+  pid_t pid;
+  for (int i = 0; i < n; i++) {
+//    pid = fork();
+//    if (pid) {
+//      wait(NULL);
+//    } else if (pid == 0) {
+//      do_work(i + 0x41);
+//      exit(0);
+//    } else {
+//      std::cerr << "For error at iteration " << i << "\n";
+//    }
+    
+    switch(fork()) {
+      case 0:
+        do_work(i + 0x41);
+        exit(0);
+        break;
+      case -1:
+        std::cerr << "Fork error at iteration " << i << "\n";
+        break;
+      default: ;
+    }
+  }
+}
+
+void spawn_recursive(int n) {
   if (n > 0) {
     if (fork() == 0) {
       do_work(n + 0x40);
       if (n) {
-        spawn(n - 1);
+        spawn_recursive(n - 1);
       } else {
         wait(NULL);
         return;
@@ -129,10 +156,11 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
 }
 
 int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
-  int len;
-  int bytes_sent;
+  int len = 0;
+  int bytes_sent = 0;
   int count = 1;
   char d_msg[MAXDATASIZE];
+  char adm_resp[MAXDATASIZE];
   
   for (std::map<std::string, float>::iterator r = dp->requirements->begin(); r != dp->requirements->end(); ++r) {
     
@@ -141,8 +169,18 @@ int send_data_to_admission_server(int sockfd, DepartmentParser *dp) {
     len = (int) strlen(d_msg);
     bytes_sent = (int) send(sockfd, d_msg, len, 0);
     std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
-    sleep(DEPT_SLEEP_BETWEEN_PROGRAM);
+    //sleep(DEPT_SLEEP_BETWEEN_PROGRAM);
     //std::cout << "sleeping...\n";
+    
+    std::cout << "Waiting for acknowledgement from Admission Server...\n";
+    while(1) {
+      recv(sockfd, adm_resp, sizeof(adm_resp), 0);
+      
+      std::cout << "Received " << adm_resp << "\n";
+      if (strcmp(adm_resp, "ADM_RX_OK") == 0) {
+        break;
+      }
+    }
     
     count++;
   }

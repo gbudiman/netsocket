@@ -13,6 +13,7 @@
 int do_work(char);
 int connect_to_admission_server(DepartmentParser*, char);
 int send_data_to_admission_server(int, DepartmentParser*);
-void spawn(int);
+void spawn_recursive(int);
+void spawn_iterative(int);
 
 #endif /* Department_h */

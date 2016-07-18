@@ -23,6 +23,9 @@ void *get_in_addr(struct sockaddr *sa) {
 }
 
 int main() {
+  srand(time(NULL));
+  std::map<std::string, float> *database = new std::map<std::string, float>();
+  
   int sockfd, new_fd;
   struct addrinfo hints, *servinfo, *p;
   struct sockaddr_storage their_addr;
@@ -126,11 +129,28 @@ int main() {
 // RECV()
 /////////////////////////////
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
-        std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
         
-        if (strcmp(r_msg.c_str(), "TX_FIN") == 0) {
-          std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
-          break;
+        if (receive_length > 0) {
+          std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
+        
+          if (strcmp(r_msg.c_str(), "TX_FIN") == 0) {
+            std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+            break;
+          } else {
+            
+            int rand_wait = rand() % 500 + 500;
+            usleep(rand() % 500 + 500);
+            int pdm_error;
+            pdm_error = process_department_message(receive_buffer, receive_length, database);
+            
+            if (pdm_error == 0) {
+              if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
+                perror("dept ack");
+              } else {
+                std::cout << "ADM_RX_OK sent out after randomly waiting for " << rand_wait << " us\n";
+              }
+            }
+          }
         }
       }
       close(new_fd);
@@ -140,6 +160,30 @@ int main() {
     close(new_fd);
   }
   
+  return 0;
+}
+
+uint32_t process_department_message(char *buffer, int length, std::map<std::string, float> *db) {
+  char *element;
+  uint32_t e_pos = 0;
+  std::string dept_program = "";
+  float dept_program_min_gpa = 0;
+  
+  element = strtok(buffer, "#");
+  while (element != NULL) {
+    switch(e_pos) {
+      case 0:
+        dept_program = element;
+        break;
+      case 1:
+        dept_program_min_gpa = std::atof(element);
+        break;
+    }
+    element = strtok(NULL, "#");
+    e_pos++;
+  }
+  
+  db->insert(std::make_pair(dept_program, dept_program_min_gpa));
   return 0;
 }
 
