@@ -87,10 +87,8 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   int rv;
   
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
+  hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  
-  
   
   if ((rv = getaddrinfo("localhost", ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv) << "\n";

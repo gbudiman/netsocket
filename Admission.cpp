@@ -30,17 +30,20 @@ int main() {
   struct addrinfo hints, *servinfo, *p;
   struct sockaddr_storage their_addr;
   socklen_t sin_size;
-  struct sigaction sa;
+  
+  int depts_completed = 0;
   int yes = 1;
   char s[INET6_ADDRSTRLEN];
   char receive_buffer[MAXDATASIZE];
   int receive_length;
   int rv;
   
+  struct sigaction sa;
+  
   memset(&hints, 0 ,sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
+  hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+  hints.ai_flags = AI_PASSIVE | AI_V4MAPPED | AI_ADDRCONFIG;
   
   if ((rv = getaddrinfo(NULL, ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
@@ -79,7 +82,7 @@ int main() {
     return 2;
   }
   
-  fm_self_tcp_ip(p, ADMISSION_PORT);
+  fm_self_tcp_ip(p, (char*) ADMISSION_PORT);
   
   freeaddrinfo(servinfo);
   
@@ -110,7 +113,7 @@ int main() {
 /////////////////////////////
     new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &sin_size);
     if (new_fd == -1) {
-      perror("accept");
+      //perror("accept");
       continue;
     }
     
@@ -165,11 +168,16 @@ int main() {
           }
         }
       }
+      
       close(new_fd);
       exit(0);
+    } else {
+      wait(NULL);
+      depts_completed++;
     }
     
     close(new_fd);
+    check_department_completion(&depts_completed);
   }
   
   return 0;
@@ -199,6 +207,13 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
   return 0;
 }
 
+void check_department_completion(int *size) {
+  if (*size == NUM_DEPTS) {
+    fm_phase1_completed();
+    *size = 0;
+  }
+}
+
 std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
   std::string result = "";
   
@@ -218,6 +233,10 @@ std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
   }
   
   return result;
+}
+
+void fm_phase1_completed() {
+  flow_message(AMSG_P1_END, NULL);
 }
 
 void fm_self_tcp_ip(addrinfo *p, char *port) {
@@ -244,8 +263,8 @@ void fm_dept_completed(char dept_name) {
 void flow_message(int type, std::vector<std::string>* args) {
   switch(type) {
     case AMSG_P1_START:
-      std::cout << "The admission office has TCP port " << args->at(0)
-      << " and IP " << args->at(1) << "\n";
+      std::cout << "The admission office has TCP port " << args->at(1)
+      << " and IP " << args->at(0) << "\n";
       break;
     case AMSG_DEPT_COMPLETED:
       std::cout << "Received the program list from " << args->at(0) << "\n";
