@@ -9,9 +9,7 @@
 #ifndef main_h
 #define main_h
 
-#if !defined PROJ_DEBUG
 #define PROJ_DEBUG 0
-#endif
 
 #define NUM_STUDENTS 5
 #define NUM_DEPTS 3

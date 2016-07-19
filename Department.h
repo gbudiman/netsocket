@@ -11,6 +11,8 @@
 #include "DepartmentMessenger.hpp"
 #include "DepartmentParser.hpp"
 
+void initialize_children_trackers();
+void wait_for_children();
 int do_work(char);
 int connect_to_admission_server(DepartmentParser*, char);
 int send_data_to_admission_server(char, int, DepartmentParser*);
@@ -19,13 +21,7 @@ void spawn_iterative(int);
 void spawn_one();
 void get_self_interfaces_info();
 
-void flow_message(int, std::vector<std::string>*);
-void fm_self_tcp_ip(char, addrinfo*, char*);
-void fm_self_connected(char);
-void fm_self_program_sent(char, std::string);
-void fm_self_all_program_sent(char);
-void fm_self_phase1_done(char);
-
 DepartmentMessenger *dm = new DepartmentMessenger();
+std::vector<int> *child_processes;
 
 #endif /* Department_h */

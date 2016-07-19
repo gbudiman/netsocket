@@ -11,11 +11,38 @@
 #include "Department.h"
 
 int main() {
+  initialize_children_trackers();
   spawn_iterative(NUM_DEPTS);
   //spawn_one();
   // wait(NULL);
   
+  // wait_for_children();
   return 0;
+}
+
+void initialize_children_trackers() {
+  child_processes = new std::vector<int>();
+  
+  for (int i = 0; i < NUM_DEPTS; i++) {
+    child_processes->push_back(-1);
+  }
+}
+
+void wait_for_children() {
+  if (PROJ_DEBUG) {
+    std::cout << "Spin-waiting for children to complete\n";
+  }
+  
+  int current_child_pos = 0;
+  while (current_child_pos < NUM_DEPTS) {
+    if (child_processes->at(current_child_pos) == 0) {
+      current_child_pos++;
+    }
+  }
+  
+  if (PROJ_DEBUG) {
+    std::cout << "Spin-wait completed, current_child_pos is " << current_child_pos << "\n";
+  }
 }
 
 void spawn_one() {
@@ -36,6 +63,9 @@ void spawn_iterative(int n) {
         break;;
     }
   }
+  
+  wait(NULL);
+  exit(0);
 }
 
 void spawn_recursive(int n) {
