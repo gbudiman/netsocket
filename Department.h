@@ -26,8 +26,6 @@ void fm_self_program_sent(char, std::string);
 void fm_self_all_program_sent(char);
 void fm_self_phase1_done(char);
 
-void *get_in_addr(struct sockaddr *sa);
-
 DepartmentMessenger *dm = new DepartmentMessenger();
 
 #endif /* Department_h */

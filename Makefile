@@ -1,25 +1,28 @@
 all: student admission department
-	g++ Student.o StudentParser.o -o Student #-lsocket -lnsl -lresolv
-	g++ Admission.o -o Admission #-lsocket -lnsl -lresolv
-	g++ Department.o DepartmentParser.o -o Department #-lsocket -lnsl -lresolv
+	g++ Student.o StudentParser.o -o Student -lsocket -lnsl -lresolv
+	g++ Admission.o AdmissionMessenger.o -o Admission -lsocket -lnsl -lresolv
+	g++ Department.o DepartmentParser.o DepartmentMessenger.o -o Department -lsocket -lnsl -lresolv
 
 student: student_parser
-	g++ -c StudentParser.o Student.cpp Student.h main.h
+	g++ -c StudentParser.o Student.cpp Student.h
 
 student_parser:
-	g++ -c StudentParser.cpp StudentParser.hpp main.h
+	g++ -c StudentParser.cpp StudentParser.hpp
 	
-admission: Admission.cpp
-	g++ -c Admission.cpp Admission.h main.h
+admission: admission_messenger
+	g++ -c Admission.cpp Admission.h
+
+admission_messenger: 
+	g++ -c AdmissionMessenger.cpp AdmissionMessenger.hpp
 
 department: department_parser department_messenger
 	g++ -c Department.cpp Department.h main.h
 
 department_parser:
-	g++ -c DepartmentParser.cpp DepartmentParser.hpp main.h
+	g++ -c DepartmentParser.cpp DepartmentParser.hpp
 
 department_messenger:
-	g++ -c DepartmentMessenger.cpp DepartmentMessenger.hpp main.h
+	g++ -c DepartmentMessenger.cpp DepartmentMessenger.hpp
 
 clean:
 	rm *.o *.gch Student Admission Department *.out

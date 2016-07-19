@@ -7,19 +7,10 @@
 //
 
 #include <stdio.h>
-#include "main.h"
 #include "Admission.h"
 
 void sigchld_handler(int s) {
   while(waitpid(-1, NULL, WNOHANG) > 0);
-}
-
-void *get_in_addr(struct sockaddr *sa) {
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*) sa)->sin_addr);
-  }
-  
-  return &(((struct sockaddr_in6*) sa)->sin6_addr);
 }
 
 int main() {
@@ -82,7 +73,8 @@ int main() {
     return 2;
   }
   
-  fm_self_tcp_ip(p, (char*) ADMISSION_PORT);
+  //fm_self_tcp_ip(p, (char*) ADMISSION_PORT);
+  am->display_tcp_ip(p, (char*) ADMISSION_PORT);
   
   freeaddrinfo(servinfo);
   
@@ -146,7 +138,8 @@ int main() {
               std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
             }
             
-            fm_dept_completed(current_dept);
+            //fm_dept_completed(current_dept);
+            am->display_department_completed(current_dept);
             break;
           } else {
             
@@ -209,7 +202,8 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
 
 void check_department_completion(int *size) {
   if (*size == NUM_DEPTS) {
-    fm_phase1_completed();
+    //fm_phase1_completed();
+    am->display_phase1_completed();
     *size = 0;
   }
 }
@@ -233,43 +227,4 @@ std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
   }
   
   return result;
-}
-
-void fm_phase1_completed() {
-  flow_message(AMSG_P1_END, NULL);
-}
-
-void fm_self_tcp_ip(addrinfo *p, char *port) {
-  struct sockaddr_storage my_addr;
-  char host_ip[255];
-  std::vector<std::string> *args = new std::vector<std::string>();
-  
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
-  args->push_back(host_ip);
-  args->push_back(port);
-  
-  flow_message(AMSG_P1_START, args);
-}
-
-void fm_dept_completed(char dept_name) {
-  std::vector<std::string> *args = new std::vector<std::string>();
-  std::string dept_name_s = "";
-  dept_name_s = dept_name;
-  
-  args->push_back(dept_name_s);
-  flow_message(AMSG_DEPT_COMPLETED, args);
-}
-
-void flow_message(int type, std::vector<std::string>* args) {
-  switch(type) {
-    case AMSG_P1_START:
-      std::cout << "The admission office has TCP port " << args->at(1)
-      << " and IP " << args->at(0) << "\n";
-      break;
-    case AMSG_DEPT_COMPLETED:
-      std::cout << "Received the program list from " << args->at(0) << "\n";
-      break;
-    case AMSG_P1_END:
-      std::cout << "End of Phase 1 for the admission office\n";
-  }
 }

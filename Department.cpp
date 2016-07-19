@@ -10,8 +10,6 @@
 #include "main.h"
 #include "Department.h"
 
-
-
 int main() {
   spawn_iterative(NUM_DEPTS);
   //spawn_one();

@@ -2,7 +2,6 @@
 #define DepartmentMessenger_hpp
 
 #include "main.h"
-#include "Socket.hpp"
 
 #define DMSG_P1_START 0
 #define DMSG_ADM_CONNECTED 1
@@ -29,4 +28,5 @@ private:
   std::string department_name;
 };
 
+void *get_in_addr(struct sockaddr *sa);
 #endif
