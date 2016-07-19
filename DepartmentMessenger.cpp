@@ -16,14 +16,21 @@ void DepartmentMessenger::set_department_name(std::string x) {
   department_name = x;
 }
 
-void DepartmentMessenger::display_tcp_ip(addrinfo *p, char *port) {
+void DepartmentMessenger::display_tcp_ip(int sockfd, std::string ip_address) {
+  struct sockaddr_in sin;
+  socklen_t addrlen = sizeof(sin);
+  getsockname(sockfd, (struct sockaddr *) &sin, &addrlen);
+  int local_port = ntohs(sin.sin_port);
+  char local_port_s[MAXDATASIZE];
+  sprintf(local_port_s, "%d", local_port);
+  
   char host_ip[255];
   std::string dept_name_s = "";
   std::vector<std::string> *args = new std::vector<std::string>();
   
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
-  args->push_back(host_ip);
-  args->push_back(port);
+  //inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
+  args->push_back(ip_address);
+  args->push_back((std::string) local_port_s);
   
   display(DMSG_P1_START, args);
 }

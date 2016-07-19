@@ -36,7 +36,7 @@ int main() {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
   
-  if ((rv = getaddrinfo(NULL, ADMISSION_PORT, &hints, &servinfo)) != 0) {
+  if ((rv = getaddrinfo(SERVER, ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
     return 1;
   }
@@ -73,9 +73,8 @@ int main() {
     return 2;
   }
   
-  //fm_self_tcp_ip(p, (char*) ADMISSION_PORT);
-  am->display_tcp_ip(p, (char*) ADMISSION_PORT);
-  
+  am->display_tcp_ip(sockfd, get_all_addresses());
+
   freeaddrinfo(servinfo);
   
 /////////////////////////////
@@ -119,7 +118,9 @@ int main() {
 /////////////////////////////
 // SEND()
 /////////////////////////////
-      if (send(new_fd, "Hello, child!", 13, 0) == -1) {
+      
+      std::string client_ip = get_client_ip_address(new_fd);
+      if (send(new_fd, client_ip.c_str(), client_ip.length(), 0) == -1) {
         perror("send");
       }
       
@@ -227,4 +228,38 @@ std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
   }
   
   return result;
+}
+
+std::string get_client_ip_address(int sockfd) {
+  struct sockaddr_storage addr;
+  char ipstr[INET6_ADDRSTRLEN];
+  socklen_t addrlen = sizeof(addr);
+  
+  getpeername(sockfd, (struct sockaddr *) &addr, &addrlen);
+  struct sockaddr_in *s = (struct sockaddr_in *) &addr;
+  
+  inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
+  return (std::string) ipstr;
+}
+
+std::string get_all_addresses() {
+  struct addrinfo hints, *res, *p;
+  char ipstr[INET6_ADDRSTRLEN];
+  
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  
+  getaddrinfo(SERVER, NULL, &hints, &res);
+  
+  for (p = res; p != NULL; p = p->ai_next) {
+    void *addr;
+    struct sockaddr_in *ip = (struct sockaddr_in *) p->ai_addr;
+    addr = &(ip->sin_addr);
+    
+    inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+  }
+  
+  freeaddrinfo(res);
+  return (std::string) ipstr;
 }

@@ -19,7 +19,7 @@ int send_data_to_admission_server(char, int, DepartmentParser*);
 void spawn_recursive(int);
 void spawn_iterative(int);
 void spawn_one();
-void get_self_interfaces_info();
+
 
 DepartmentMessenger *dm = new DepartmentMessenger();
 std::vector<int> *child_processes;

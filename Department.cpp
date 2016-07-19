@@ -17,6 +17,11 @@ int main() {
   // wait(NULL);
   
   // wait_for_children();
+  
+  if (ENABLE_PHASE_2) {
+    //sleep(10);
+    //std::cout << "begin phase 2\n";
+  }
   return 0;
 }
 
@@ -60,12 +65,13 @@ void spawn_iterative(int n) {
         std::cerr << "Fork error at iteration " << i << "\n";
         break;
       default:
+        wait(NULL);
         break;;
     }
   }
   
   wait(NULL);
-  exit(0);
+  //exit(0);
 }
 
 void spawn_recursive(int n) {
@@ -138,8 +144,7 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
     return 2;
   }
 
-  //fm_self_tcp_ip(dept_name, p, (char*) ADMISSION_PORT);
-  dm->display_tcp_ip(p, (char*) ADMISSION_PORT);
+  
   freeaddrinfo(servinfo);
   
   if ((numbytes = (int) recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
@@ -148,7 +153,11 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   }
   
   buf[numbytes] = '\0';
+  std::string my_ext_ip_address = "";
+  my_ext_ip_address = buf;
+  //std::cout << "Received " << my_ext_ip_address << "\n";
   //fm_self_connected(dept_name);
+  dm->display_tcp_ip(sockfd, my_ext_ip_address);
   dm->display_connected();
   send_data_to_admission_server(dept_name, sockfd, dp);
   dm->display_phase1_completed();
@@ -208,6 +217,18 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
   dm->display_all_program_sent();
   
   return 0;
+}
+
+std::string get_client_ip_address(int sockfd) {
+  struct sockaddr_storage addr;
+  char ipstr[INET6_ADDRSTRLEN];
+  socklen_t addrlen = sizeof(addr);
+  
+  getpeername(sockfd, (struct sockaddr *) &addr, &addrlen);
+  struct sockaddr_in *s = (struct sockaddr_in *) &addr;
+  
+  inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
+  return (std::string) ipstr;
 }
 
 //void get_self_interfaces_info() {

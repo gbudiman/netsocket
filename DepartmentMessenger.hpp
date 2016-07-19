@@ -16,7 +16,7 @@ class DepartmentMessenger {
 public:
   DepartmentMessenger();
   void set_department_name(std::string);
-  void display_tcp_ip(addrinfo*, char*);
+  void display_tcp_ip(int, std::string);
   void display_connected();
   void display_one_program_sent(std::string);
   void display_all_program_sent();

@@ -15,11 +15,9 @@
 std::string debug_receive_buffer(char*, int);
 uint32_t process_department_message(char*, int, std::map<std::string, float>*);
 
-void fm_self_tcp_ip(addrinfo*, char*);
-void fm_dept_completed(char);
-void fm_phase1_completed();
-void flow_message(int, std::vector<std::string>*);
 void check_department_completion(int*);
+std::string get_client_ip_address(int);
+std::string get_all_addresses();
 
 AdmissionMesseger *am = new AdmissionMesseger();
 #endif /* Admission_h */

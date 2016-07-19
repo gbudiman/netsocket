@@ -12,14 +12,21 @@ AdmissionMesseger::AdmissionMesseger() {
   
 }
 
-void AdmissionMesseger::display_tcp_ip(addrinfo *p, char *port) {
+void AdmissionMesseger::display_tcp_ip(int sockfd, std::string ip) {
+  struct sockaddr_in sin;
+  socklen_t addrlen = sizeof(sin);
+  getsockname(sockfd, (struct sockaddr *) &sin, &addrlen);
+  int local_port = ntohs(sin.sin_port);
+  char local_port_s[MAXDATASIZE];
+  sprintf(local_port_s, "%d", local_port);
+  
   struct sockaddr_storage my_addr;
   char host_ip[255];
   std::vector<std::string> *args = new std::vector<std::string>();
   
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
-  args->push_back(host_ip);
-  args->push_back(port);
+  //inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
+  args->push_back(ip);
+  args->push_back((std::string) local_port_s);
   
   display(AMSG_P1_START, args);
 }

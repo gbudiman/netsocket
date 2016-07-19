@@ -17,10 +17,12 @@
 #define DEPT_WAIT_LIMIT_SECOND 20     // second
 #define DEPT_SLEEP_BETWEEN_PROGRAM 1  // second
 
-#define ADMISSION_PORT "5553"
+#define ADMISSION_PORT "3950"
 #define ADMISSION_BACKLOG 24
 
 #define MAXDATASIZE 255
+
+#define ENABLE_PHASE_2 1
 
 #define SERVER "localhost"
 
