@@ -157,7 +157,7 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   my_ext_ip_address = buf;
   //std::cout << "Received " << my_ext_ip_address << "\n";
   //fm_self_connected(dept_name);
-  dm->display_tcp_ip(sockfd, my_ext_ip_address);
+  dm->display_tcp_ip(get_socket_port(sockfd), my_ext_ip_address);
   dm->display_connected();
   send_data_to_admission_server(dept_name, sockfd, dp);
   dm->display_phase1_completed();
@@ -229,6 +229,17 @@ std::string get_client_ip_address(int sockfd) {
   
   inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
   return (std::string) ipstr;
+}
+
+std::string get_socket_port(int sockfd) {
+  struct sockaddr_in sin;
+  socklen_t addrlen = sizeof(sin);
+  getsockname(sockfd, (struct sockaddr *) &sin, &addrlen);
+  
+  int local_port = ntohs(sin.sin_port);
+  char local_port_s[MAXDATASIZE];
+  sprintf(local_port_s, "%d", local_port);
+  return (std::string) local_port_s;
 }
 
 //void get_self_interfaces_info() {

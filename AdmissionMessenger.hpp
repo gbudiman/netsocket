@@ -11,7 +11,7 @@
 class AdmissionMesseger {
 public:
   AdmissionMesseger();
-  void display_tcp_ip(int, std::string);
+  void display_tcp_ip(std::string, std::string);
   void display_department_completed(char);
   void display_phase1_completed();
 private:

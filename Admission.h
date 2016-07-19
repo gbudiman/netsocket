@@ -17,7 +17,8 @@ uint32_t process_department_message(char*, int, std::map<std::string, float>*);
 
 void check_department_completion(int*);
 std::string get_client_ip_address(int);
-std::string get_all_addresses();
+std::string get_socket_port(int);
+std::string get_self_ip_address();
 
 AdmissionMesseger *am = new AdmissionMesseger();
 #endif /* Admission_h */

@@ -20,6 +20,7 @@ void spawn_recursive(int);
 void spawn_iterative(int);
 void spawn_one();
 
+std::string get_socket_port(int);
 
 DepartmentMessenger *dm = new DepartmentMessenger();
 std::vector<int> *child_processes;

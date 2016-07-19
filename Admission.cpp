@@ -17,7 +17,7 @@ int main() {
   srand(time(NULL));
   std::map<std::string, float> *database = new std::map<std::string, float>();
   
-  int sockfd, new_fd;
+  int sockfd = 0, new_fd;
   struct addrinfo hints, *servinfo, *p;
   struct sockaddr_storage their_addr;
   socklen_t sin_size;
@@ -73,7 +73,7 @@ int main() {
     return 2;
   }
   
-  am->display_tcp_ip(sockfd, get_all_addresses());
+  am->display_tcp_ip(get_socket_port(sockfd), get_self_ip_address());
 
   freeaddrinfo(servinfo);
   
@@ -242,7 +242,18 @@ std::string get_client_ip_address(int sockfd) {
   return (std::string) ipstr;
 }
 
-std::string get_all_addresses() {
+std::string get_socket_port(int sockfd) {
+  struct sockaddr_in sin;
+  socklen_t addrlen = sizeof(sin);
+  getsockname(sockfd, (struct sockaddr *) &sin, &addrlen);
+  
+  int local_port = ntohs(sin.sin_port);
+  char local_port_s[MAXDATASIZE];
+  sprintf(local_port_s, "%d", local_port);
+  return (std::string) local_port_s;
+}
+
+std::string get_self_ip_address() {
   struct addrinfo hints, *res, *p;
   char ipstr[INET6_ADDRSTRLEN];
   
