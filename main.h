@@ -24,6 +24,8 @@
 
 #define MAXDATASIZE 255
 
+#define SERVER "localhost"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <math.h>

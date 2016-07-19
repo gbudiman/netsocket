@@ -10,17 +10,11 @@
 #include "main.h"
 #include "Department.h"
 
-void *get_in_addr(struct sockaddr *sa) {
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*) sa)->sin_addr);
-  }
-  
-  return &(((struct sockaddr_in6*) sa)->sin6_addr);
-}
+
 
 int main() {
   spawn_iterative(NUM_DEPTS);
-  // spawn_one();
+  //spawn_one();
   // wait(NULL);
   
   return 0;
@@ -61,13 +55,14 @@ void spawn_recursive(int n) {
 }
 
 int do_work(char d) {
+  std::string dept_name = ""; dept_name += d;
+  DepartmentParser *dp = new DepartmentParser(dept_name);
+  dm = new DepartmentMessenger();
+  dm->set_department_name(dept_name);
+  
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " created for department " << d << "\n";
   }
-  
-  std::string dept_name = "";
-  dept_name += d;
-  DepartmentParser *dp = new DepartmentParser(dept_name);
   
   //get_self_interfaces_info();
   int connection_status = connect_to_admission_server(dp, d);
@@ -90,7 +85,7 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   
-  if ((rv = getaddrinfo("localhost", ADMISSION_PORT, &hints, &servinfo)) != 0) {
+  if ((rv = getaddrinfo(SERVER, ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv) << "\n";
     return 1;
   }
@@ -115,95 +110,24 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
     return 2;
   }
 
-  fm_self_tcp_ip(dept_name, p, (char*) ADMISSION_PORT);
+  //fm_self_tcp_ip(dept_name, p, (char*) ADMISSION_PORT);
+  dm->display_tcp_ip(p, (char*) ADMISSION_PORT);
   freeaddrinfo(servinfo);
   
-  if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
+  if ((numbytes = (int) recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
     perror("recv");
     exit(1);
   }
   
   buf[numbytes] = '\0';
-  fm_self_connected(dept_name);
+  //fm_self_connected(dept_name);
+  dm->display_connected();
   send_data_to_admission_server(dept_name, sockfd, dp);
-  fm_self_phase1_done(dept_name);
+  dm->display_phase1_completed();
+  //fm_self_phase1_done(dept_name);
 
   close(sockfd);
   return 0;
-}
-
-void flow_message(int type, std::vector<std::string> *args) {
-  switch(type) {
-    case DMSG_P1_START:
-      std::cout << "Department " << args->at(0)
-      << " has TCP port " << args->at(2)
-      << " and IP " << args->at(1) << "\n";
-      break;
-    case DMSG_ADM_CONNECTED:
-      std::cout << "Department " << args->at(0) << " is now connected to the admission office\n";
-      break;
-    case DMSG_PROG_SENT:
-      std::cout << "Department " << args->at(0) << " has sent " << args->at(1) << " to the admission office\n";
-      break;
-    case DMSG_PROG_COMPLETED:
-      std::cout << "Updating the admission office is done for Department " << args->at(0) << "\n";
-      break;
-    case DMSG_P1_END:
-      std::cout << "End of Phase 1 for Department " << args->at(0) << "\n";
-      break;
-  }
-}
-
-void fm_self_connected(char dept_name) {
-  std::vector<std::string> *args = new std::vector<std::string>();
-  std::string dept_name_s = "";
-  dept_name_s = dept_name;
-  
-  args->push_back(dept_name_s);
-  flow_message(DMSG_ADM_CONNECTED, args);
-}
-
-void fm_self_tcp_ip(char dept_name, addrinfo *p, char *port) {
-  struct sockaddr_storage my_addr;
-  char host_ip[255];
-  std::string dept_name_s = "";
-  std::vector<std::string> *args = new std::vector<std::string>();
-  
-  dept_name_s = dept_name;
-  
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *) &p), host_ip, sizeof(host_ip));
-  args->push_back(dept_name_s);
-  args->push_back(host_ip);
-  args->push_back(port);
-  flow_message(DMSG_P1_START, args);
-}
-
-void fm_self_program_sent(char dept_name, std::string program) {
-  std::vector<std::string> *args = new std::vector<std::string>();
-  std::string dept_name_s = "";
-  dept_name_s = dept_name;
-  
-  args->push_back(dept_name_s);
-  args->push_back(program);
-  flow_message(DMSG_PROG_SENT, args);
-}
-
-void fm_self_all_program_sent(char dept_name) {
-  std::vector<std::string> *args = new std::vector<std::string>();
-  std::string dept_name_s = "";
-  dept_name_s = dept_name;
-  
-  args->push_back(dept_name_s);
-  flow_message(DMSG_PROG_COMPLETED, args);
-}
-
-void fm_self_phase1_done(char dept_name) {
-  std::vector<std::string> *args = new std::vector<std::string>();
-  std::string dept_name_s = "";
-  dept_name_s = dept_name;
-  
-  args->push_back(dept_name_s);
-  flow_message(DMSG_P1_END, args);
 }
 
 int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *dp) {
@@ -219,7 +143,8 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     len = (int) strlen(d_msg);
     bytes_sent = (int) send(sockfd, d_msg, len, 0);
     
-    fm_self_program_sent(dept_name, r->first);
+    //fm_self_program_sent(dept_name, r->first);
+    dm->display_one_program_sent(r->first);
     
     if (PROJ_DEBUG) {
       std::cout << bytes_sent << " bytes sent: " << d_msg << "\n";
@@ -251,7 +176,8 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     std::cout << "Done transmitting!\n";
   }
   
-  fm_self_all_program_sent(dept_name);
+  // fm_self_all_program_sent(dept_name);
+  dm->display_all_program_sent();
   
   return 0;
 }
