@@ -14,6 +14,23 @@ void sigchld_handler(int s) {
 }
 
 int main() {
+  create_empty_database_file();
+  create_tcp_and_process();
+  make_admission_decision();
+  return 0;
+}
+
+void create_empty_database_file() {
+  std::ofstream fs;
+  fs.open(DATABASE_FILE, std::ios::out);
+  fs.close();
+}
+
+void make_admission_decision() {
+  std::cout << database->size() << "\n";
+}
+
+void create_tcp_and_process() {
   srand(time(NULL));
   database = new std::map<std::string, float>();
   
@@ -38,7 +55,6 @@ int main() {
   
   if ((rv = getaddrinfo(SERVER, ADMISSION_PORT, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
-    return 1;
   }
   
   for(p = servinfo; p != NULL; p = p->ai_next) {
@@ -70,7 +86,6 @@ int main() {
   
   if (p == NULL) {
     std::cerr << "Admission Server: failed to bind\n";
-    return 2;
   }
   
   am->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
@@ -180,10 +195,10 @@ int main() {
     }
     
     close(new_fd);
-    check_department_completion(&depts_completed);
+    if (check_department_completion(&depts_completed)) {
+      break;
+    }
   }
-  
-  return 0;
 }
 
 int handle_student_messages(int new_fd, const char *msg, char *current_dept) {
@@ -249,15 +264,26 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
   }
   
   db->insert(std::make_pair(dept_program, dept_program_min_gpa));
+  std::ofstream f;
+  f.open(DATABASE_FILE, std::ios::app);
+  char line_buffer[MAXDATASIZE];
+  
+  sprintf(line_buffer, "%s#%.1f\n", dept_program.c_str(), dept_program_min_gpa);
+  f << line_buffer;
+  f.close();
   return 0;
 }
 
-void check_department_completion(int *size) {
+bool check_department_completion(int *size) {
   if (*size == NUM_DEPTS) {
     //fm_phase1_completed();
     am->display_phase1_completed();
     *size = 0;
+    
+    return true;
   }
+  
+  return false;
 }
 
 std::string debug_receive_buffer(char *receive_buffer, int receive_length) {

@@ -12,14 +12,20 @@
 #define CLIENT_IS_DEPARTMENT 1
 #define CLIENT_IS_STUDENT 2
 
+#define DATABASE_FILE "database.txt"
+
 #include "main.h"
 #include "AdmissionMessenger.hpp"
 #include "Socket.hpp"
 
+void create_empty_database_file();
+void create_tcp_and_process();
+void make_admission_decision();
+
 std::string debug_receive_buffer(char*, int);
 uint32_t process_department_message(char*, int, std::map<std::string, float>*);
 
-void check_department_completion(int*);
+bool check_department_completion(int*);
 
 int handle_department_messages(int, const char*, char*);
 int handle_student_messages(int, const char*, char*);
