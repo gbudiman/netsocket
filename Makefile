@@ -1,7 +1,10 @@
-all: student admission department
-	g++ Student.o StudentParser.o -o Student -lsocket -lnsl -lresolv
-	g++ Admission.o AdmissionMessenger.o -o Admission -lsocket -lnsl -lresolv
-	g++ Department.o DepartmentParser.o DepartmentMessenger.o -o Department -lsocket -lnsl -lresolv
+all: student admission department socket
+	g++ Student.o StudentParser.o Socket.o -o Student -lsocket -lnsl -lresolv
+	g++ Admission.o AdmissionMessenger.o Socket.o -o Admission -lsocket -lnsl -lresolv
+	g++ Department.o DepartmentParser.o DepartmentMessenger.o Socket.o -o Department -lsocket -lnsl -lresolv
+
+socket: 
+	g++ -c Socket.cpp
 
 student: student_parser
 	g++ -c Student.cpp

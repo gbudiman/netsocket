@@ -10,6 +10,7 @@
 #define Department_h
 #include "DepartmentMessenger.hpp"
 #include "DepartmentParser.hpp"
+#include "Socket.hpp"
 
 void initialize_children_trackers();
 void wait_for_children();

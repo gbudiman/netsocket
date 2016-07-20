@@ -17,7 +17,6 @@ void DepartmentMessenger::set_department_name(std::string x) {
 }
 
 void DepartmentMessenger::display_tcp_ip(std::string port, std::string ip_address) {
-  char host_ip[255];
   std::string dept_name_s = "";
   std::vector<std::string> *args = new std::vector<std::string>();
   

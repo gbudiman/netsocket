@@ -11,6 +11,7 @@
 
 #include "main.h"
 #include "AdmissionMessenger.hpp"
+#include "Socket.hpp"
 
 std::string debug_receive_buffer(char*, int);
 uint32_t process_department_message(char*, int, std::map<std::string, float>*);
