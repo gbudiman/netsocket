@@ -19,5 +19,4 @@ private:
   void display(int, std::vector<std::string>*);
 };
 
-void *get_in_addr(struct sockaddr *sa);
 #endif

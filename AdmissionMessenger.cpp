@@ -1,15 +1,6 @@
 #include "AdmissionMessenger.hpp"
 
-void *get_in_addr(struct sockaddr *sa) {
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*) sa)->sin_addr);
-  }
-  
-  return &(((struct sockaddr_in6*) sa)->sin6_addr);
-}
-
 AdmissionMesseger::AdmissionMesseger() {
-  
 }
 
 void AdmissionMesseger::display_tcp_ip(std::string port, std::string ip) {
