@@ -15,7 +15,7 @@ void sigchld_handler(int s) {
 
 int main() {
   srand(time(NULL));
-  std::map<std::string, float> *database = new std::map<std::string, float>();
+  database = new std::map<std::string, float>();
   
   int sockfd = 0, new_fd;
   struct addrinfo hints, *servinfo, *p;
@@ -25,8 +25,8 @@ int main() {
   int depts_completed = 0;
   int yes = 1;
   char s[INET6_ADDRSTRLEN];
-  char receive_buffer[MAXDATASIZE];
-  int receive_length;
+  
+  int tcp_client_type = 0;
   int rv;
   
   struct sigaction sa;
@@ -115,49 +115,58 @@ int main() {
 
     if (!fork()) {
       close(sockfd);
-/////////////////////////////
-// SEND()
-/////////////////////////////
-      
-      std::string client_ip = get_client_ip_address(new_fd);
-      if (send(new_fd, client_ip.c_str(), client_ip.length(), 0) == -1) {
-        perror("send");
-      }
       
       while (1) {
-/////////////////////////////
-// RECV()
-/////////////////////////////
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
         char current_dept;
         
         if (receive_length > 0) {
           std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
-        
-          if (strcmp(r_msg.c_str(), "TX_FIN") == 0) {
+          
+          if (tcp_client_type == 0) {
             if (PROJ_DEBUG) {
-              std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+              std::cout << "Received introduction: " << r_msg << "\n";
             }
             
-            //fm_dept_completed(current_dept);
-            am->display_department_completed(current_dept);
-            break;
-          } else {
+            if (strcmp(r_msg.c_str(), "I_AM_STUDENT") == 0) {
+              tcp_client_type = CLIENT_IS_STUDENT;
+            } else if (strcmp(r_msg.substr(0, 15).c_str(), "I_AM_DEPARTMENT") == 0) {
+              tcp_client_type = CLIENT_IS_DEPARTMENT;
+            } else {
+              std::cerr << "Unrecognized introduction: " << r_msg << "\n";
+            }
             
-            int rand_wait = rand() % 500 + 500;
-            usleep(rand() % 500 + 500);
-            int pdm_error;
-            pdm_error = process_department_message(receive_buffer, receive_length, database);
-            
-            if (pdm_error == 0) {
-              current_dept = receive_buffer[0];
-              if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
-                perror("dept ack");
-              } else {
-                if (PROJ_DEBUG) {
-                  std::cout << "ADM_RX_OK sent out after randomly waiting for " << rand_wait << " us\n";
-                }
+            if (tcp_client_type > 0) {
+              if (PROJ_DEBUG) {
+                std::cout << "tcp_client_type set to " << tcp_client_type << "\n";
               }
+              if (send(new_fd, "ADM_I_RCGZ", 10, 0) == -1) {
+                perror("adm_recogniztion");
+              }
+            }
+          } else {
+            int can_continue = 0;
+            if (PROJ_DEBUG) {
+              std::cout << "Entering core communication phase with tcp_client_type " << tcp_client_type << "\n";
+            }
+            
+            switch (tcp_client_type) {
+              case CLIENT_IS_STUDENT:
+                can_continue = handle_student_messages(new_fd,
+                                                       r_msg.c_str(),
+                                                       &current_dept);
+                break;
+              case CLIENT_IS_DEPARTMENT:
+                can_continue = handle_department_messages(new_fd,
+                                                          r_msg.c_str(),
+                                                          &current_dept);
+                break;
+              default:
+                std::cerr << "tcp_client_type is not set: " << tcp_client_type << "\n";
+            }
+            
+            if (can_continue == 0) {
+              break;
             }
           }
         }
@@ -175,6 +184,48 @@ int main() {
   }
   
   return 0;
+}
+
+int handle_student_messages(int new_fd, const char *msg, char *current_dept) {
+  return 0;
+}
+                       
+int handle_department_messages(int new_fd, const char *msg, char *current_dept) {
+  if (strcmp(msg, "TX_FIN") == 0) {
+    if (PROJ_DEBUG) {
+      std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
+    }
+    
+    //fm_dept_completed(current_dept);
+    am->display_department_completed(*current_dept);
+    return 0;
+  } else {
+    int rand_wait = rand() % 500 + 500;
+    usleep(rand() % 500 + 500);
+    int pdm_error;
+
+    pdm_error = process_department_message(receive_buffer, receive_length, database);
+    
+    if (pdm_error == 0) {
+      if (PROJ_DEBUG) {
+        std::cout << "No PDM error\n";
+      }
+      *current_dept = receive_buffer[0];
+      
+      if (PROJ_DEBUG) {
+        std::cout << "Setting currend dept to " << *current_dept << "\n";
+      }
+      if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
+        perror("dept ack");
+      } else {
+        if (PROJ_DEBUG) {
+          std::cout << "ADM_RX_OK sent out after randomly waiting for " << rand_wait << " us\n";
+        }
+      }
+    }
+    
+    return 1;
+  }
 }
 
 uint32_t process_department_message(char *buffer, int length, std::map<std::string, float> *db) {

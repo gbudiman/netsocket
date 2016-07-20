@@ -147,10 +147,10 @@ int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
   
   freeaddrinfo(servinfo);
   
-  if ((numbytes = (int) recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
-    perror("recv");
-    exit(1);
-  }
+//  if ((numbytes = (int) recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1) {
+//    perror("recv");
+//    exit(1);
+//  }
   
   buf[numbytes] = '\0';
   std::string my_ext_ip_address = "";
@@ -174,6 +174,29 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
   char d_msg[MAXDATASIZE];
   char adm_resp[MAXDATASIZE];
   
+  sprintf(d_msg, "I_AM_DEPARTMENT#%c", dept_name);
+  len = (int) strlen(d_msg);
+  send(sockfd, d_msg, len, 0);
+  
+  while(1) {
+    recv(sockfd, adm_resp, sizeof(adm_resp), 0);
+    
+//    if (PROJ_DEBUG) {
+//      std::cout << "Received " << adm_resp << "\n";
+//    }
+    
+    if (strcmp(((std::string) adm_resp).substr(0, 10).c_str(), "ADM_I_RCGZ") == 0) {
+      if (PROJ_DEBUG) {
+        std::cout << "ADM_I_RCGZ received \n";
+      }
+      break;
+    }
+  }
+  
+  if (PROJ_DEBUG) {
+    std::cout << "Admission has recognized department. Now sending data...\n";
+  }
+  
   for (std::map<std::string, float>::iterator r = dp->requirements->begin(); r != dp->requirements->end(); ++r) {
     
     sprintf(d_msg, "%s#%.1f", r->first.c_str(), r->second);
@@ -191,9 +214,9 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     while(1) {
       recv(sockfd, adm_resp, sizeof(adm_resp), 0);
       
-      if (PROJ_DEBUG) {
-        std::cout << "Received " << adm_resp << "\n";
-      }
+//      if (PROJ_DEBUG) {
+//        std::cout << "Received " << adm_resp << "\n";
+//      }
       if (strcmp(((std::string) adm_resp).substr(0, 9).c_str(), "ADM_RX_OK") == 0) {
         if (PROJ_DEBUG) {
           std::cout << "ADM_RX_OK received\n";
