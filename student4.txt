@@ -1,4 +1,2 @@
 GPA:3.1
-Interest1:A3
-Interest2:A2
-Interest3:B1
+Interest3:A9

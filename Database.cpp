@@ -44,10 +44,12 @@ void Database::build() {
   student_grades = new std::map<int, float>();
   student_interests = new std::map<int, std::vector<std::string>*>();
   department_programs = new std::map<std::string, float>();
-  std::cout << "Building database...\n";
+  decision = new std::vector<std::string>();
   
   check_is_complete(true);
-  debug_database();
+  if (PROJ_DEBUG) {
+    debug_database();
+  }
 }
 
 void Database::process_student_data(std::string x) {
@@ -158,5 +160,37 @@ void Database::debug_database() {
   
   for (std::map<std::string, float>::iterator r = department_programs->begin(); r!= department_programs->end(); ++r) {
     std::cout << "Department Program " << r->first << " min GPA: " << r->second << "\n";
+  }
+}
+
+void Database::make_decision() {
+  for (std::map<int, float>::iterator g = student_grades->begin(); g != student_grades->end(); ++g) {
+    int student_id = g->first;
+    float student_gpa = g->second;
+    bool admitted = false;
+    
+    for (std::vector<std::string>::iterator p = student_interests->at(student_id)->begin(); p != student_interests->at(student_id)->end() && !admitted; ++p) {
+      
+      if (department_programs->find(*p) != department_programs->end()) {
+        std::string program_application = *p;
+        float min_gpa = department_programs->at(*p);
+        
+        if (student_gpa >= min_gpa) {
+          std::string dec_s = "Accept#" + *p + "department" + p[0];
+          decision->push_back(dec_s);
+          admitted = true;
+        }
+      }
+    }
+    
+    if (!admitted) {
+      decision->push_back("Reject");
+    }
+  }
+}
+
+void Database::debug_decision() {
+  for (std::vector<std::string>::iterator d = decision->begin(); d != decision->end(); ++d) {
+    std::cout << *d << "\n";
   }
 }

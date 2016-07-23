@@ -29,21 +29,21 @@ void create_empty_database_file() {
 
 void make_admission_decision() {
   db->build();
+  db->make_decision();
+  
+  if (PROJ_DEBUG) {
+    db->debug_decision();
+  }
 }
 
 void create_tcp_and_process() {
   srand(time(NULL));
-  database = new std::map<std::string, float>();
-  interest_database = new std::vector<std::string>();
   
   int sockfd = 0, new_fd;
   struct sockaddr_storage their_addr;
   socklen_t sin_size;
   
-  int depts_completed = 0;
-  int students_completed = 0;
   char s[INET6_ADDRSTRLEN];
-  
   int tcp_client_type = 0;
   
   struct sigaction sa;
@@ -156,6 +156,7 @@ void create_tcp_and_process() {
     
     close(new_fd);
     if (db->check_is_complete()) {
+      am->display_phase1_completed();
       if (ENABLE_PHASE_2) {
         am->redisplay_tcp_ip();
       }
@@ -317,28 +318,6 @@ uint32_t process_department_message(std::string _buffer) {
   f << line_buffer;
   f.close();
   return 0;
-}
-
-bool check_department_completion(int *d_size, int *s_size) {
-  std::cout << "D: " << *d_size << " S: " << *s_size << "\n";
-  if (*d_size == NUM_DEPTS && *s_size == NUM_STUDENTS) {
-    am->display_phase1_completed();
-    
-    *d_size = 0;
-    *s_size = 0;
-    
-    return true;
-  }
-  
-  if (*d_size > NUM_DEPTS) {
-    *d_size -= NUM_DEPTS;
-  }
-  
-  if (*s_size > NUM_STUDENTS) {
-    *s_size -= NUM_STUDENTS;
-  }
-  
-  return false;
 }
 
 std::string debug_receive_buffer(char *receive_buffer, int receive_length) {
