@@ -12,7 +12,6 @@
 #include "DepartmentParser.hpp"
 #include "Socket.hpp"
 
-void initialize_children_trackers();
 void wait_for_children();
 int do_work(char);
 int connect_to_admission_server(DepartmentParser*, char);

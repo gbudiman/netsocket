@@ -18,6 +18,7 @@ std::string Socket::get_self_ip_address() {
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
   
   getaddrinfo(SERVER, NULL, &hints, &res);
   
@@ -31,6 +32,60 @@ std::string Socket::get_self_ip_address() {
   
   freeaddrinfo(res);
   return (std::string) ipstr;
+}
+
+int Socket::create_socket(int type) {
+  int sockfd = 0;
+  struct addrinfo hints, *servinfo, *p;
+  int rv;
+  
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  
+  if (type == TCP_SERVER) {
+    hints.ai_flags = AI_PASSIVE;
+  }
+  
+  if ((rv = getaddrinfo(SERVER, ADMISSION_PORT, &hints, &servinfo)) != 0) {
+    std::cerr << "getaddrinfo: " << gai_strerror(rv) << "\n";
+    return 1;
+  }
+  
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      //perror("client: socket");
+      continue;
+    }
+    
+    if (type == TCP_CLIENT) {
+      if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        close(sockfd);
+        continue;
+      }
+    } else if (type == TCP_SERVER) {
+      int yes = 1;
+      if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        exit(1);
+      }
+      if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        close(sockfd);
+        continue;
+      }
+    }
+    
+    break;
+  }
+  
+  if (p == NULL) {
+    std::cerr << "Failed to connect\n";
+    return -2;
+  }
+  
+  
+  freeaddrinfo(servinfo);
+  
+  return sockfd;
 }
 
 void* get_in_addr(struct sockaddr *sa) {

@@ -3,6 +3,11 @@ all: student admission department socket
 	g++ Admission.o AdmissionMessenger.o Socket.o -o Admission -lsocket -lnsl -lresolv
 	g++ Department.o DepartmentParser.o DepartmentMessenger.o Socket.o -o Department -lsocket -lnsl -lresolv
 
+mac: student admission department socket
+	g++ Student.o StudentParser.o Socket.o -o Student
+	g++ Admission.o AdmissionMessenger.o Socket.o -o Admission
+	g++ Department.o DepartmentParser.o DepartmentMessenger.o Socket.o -o Department
+
 socket: 
 	g++ -c Socket.cpp
 

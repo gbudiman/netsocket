@@ -36,7 +36,7 @@ void AdmissionMesseger::display(int type, std::vector<std::string> *args) {
       << " and IP " << args->at(0) << "\n";
       break;
     case AMSG_DEPT_COMPLETED:
-      std::cout << "Received the program list from " << args->at(0) << "\n";
+      std::cout << "Received the program list from Department" << args->at(0) << "\n";
       break;
     case AMSG_P1_END:
       std::cout << "End of Phase 1 for the admission office\n";

@@ -33,64 +33,23 @@ void make_admission_decision() {
 void create_tcp_and_process() {
   srand(time(NULL));
   database = new std::map<std::string, float>();
+  interest_database = new std::vector<std::string>();
   
   int sockfd = 0, new_fd;
-  struct addrinfo hints, *servinfo, *p;
   struct sockaddr_storage their_addr;
   socklen_t sin_size;
   
   int depts_completed = 0;
-  int yes = 1;
+  int students_completed = 0;
   char s[INET6_ADDRSTRLEN];
   
   int tcp_client_type = 0;
-  int rv;
   
   struct sigaction sa;
   
-  memset(&hints, 0 ,sizeof(hints));
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
-  
-  if ((rv = getaddrinfo(SERVER, ADMISSION_PORT, &hints, &servinfo)) != 0) {
-    std::cerr << "getaddrinfo: " << gai_strerror(rv);
-  }
-  
-  for(p = servinfo; p != NULL; p = p->ai_next) {
-/////////////////////////////
-// SOCKET()
-/////////////////////////////
-    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      perror("server: socket");
-      continue;
-    }
-    
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      perror("setsockopt");
-      exit(1);
-    }
-
-/////////////////////////////
-// BIND()
-/////////////////////////////
-    
-    if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-      close(sockfd);
-      perror("server: bind");
-      continue;
-    }
-    
-    break;
-  }
-  
-  if (p == NULL) {
-    std::cerr << "Admission Server: failed to bind\n";
-  }
-  
+  sockfd = Socket::create_socket(TCP_SERVER);
   am->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
-
-  freeaddrinfo(servinfo);
+  
   
 /////////////////////////////
 // LISTEN()
@@ -143,7 +102,7 @@ void create_tcp_and_process() {
               std::cout << "Received introduction: " << r_msg << "\n";
             }
             
-            if (strcmp(r_msg.c_str(), "I_AM_STUDENT") == 0) {
+            if (strcmp(r_msg.substr(0, 12).c_str(), "I_AM_STUDENT") == 0) {
               tcp_client_type = CLIENT_IS_STUDENT;
             } else if (strcmp(r_msg.substr(0, 15).c_str(), "I_AM_DEPARTMENT") == 0) {
               tcp_client_type = CLIENT_IS_DEPARTMENT;
@@ -168,7 +127,7 @@ void create_tcp_and_process() {
             switch (tcp_client_type) {
               case CLIENT_IS_STUDENT:
                 can_continue = handle_student_messages(new_fd,
-                                                       r_msg.c_str(),
+                                                       r_msg,
                                                        &current_dept);
                 break;
               case CLIENT_IS_DEPARTMENT:
@@ -190,19 +149,49 @@ void create_tcp_and_process() {
       close(new_fd);
       exit(0);
     } else {
-      wait(NULL);
-      depts_completed++;
+//      wait(NULL);
+//      std::cout << tcp_client_type << "!\n";
+//      depts_completed++;
+//      switch (tcp_client_type) {
+//        case CLIENT_IS_STUDENT: students_completed++; break;
+//        case CLIENT_IS_DEPARTMENT: depts_completed++; break;
+//      }
     }
     
     close(new_fd);
-    if (check_department_completion(&depts_completed)) {
+//    if (check_department_completion(&depts_completed, &students_completed)) {
+//      break;
+//    }
+    if (build_database()) {
       break;
     }
   }
 }
 
-int handle_student_messages(int new_fd, const char *msg, char *current_dept) {
-  return 0;
+int handle_student_messages(int new_fd, std::string msg, char *current_student) {
+  if (strcmp(msg.c_str(), "TX_FIN") == 0) {
+    if (PROJ_DEBUG) {
+      std::cout << "TX_FIN signal received. Closing socket\n";
+    }
+    return NO_MORE_ITERATION;
+  } else {
+    int rand_wait = rand() % 500 + 500;
+    usleep(rand_wait);
+    
+    int psm_error = process_student_message(msg);
+    
+    if (psm_error == 0) {
+      *current_student = receive_buffer[0];
+      
+      if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
+        perror("student ack");
+      } else {
+        
+      }
+    }
+    
+    return PROCEED_WITH_ITERATION;
+  }
 }
                        
 int handle_department_messages(int new_fd, const char *msg, char *current_dept) {
@@ -211,15 +200,14 @@ int handle_department_messages(int new_fd, const char *msg, char *current_dept) 
       std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
     }
     
-    //fm_dept_completed(current_dept);
     am->display_department_completed(*current_dept);
-    return 0;
+    return NO_MORE_ITERATION;
   } else {
     int rand_wait = rand() % 500 + 500;
-    usleep(rand() % 500 + 500);
+    usleep(rand_wait);
     int pdm_error;
 
-    pdm_error = process_department_message(receive_buffer, receive_length, database);
+    pdm_error = process_department_message(msg);
     
     if (pdm_error == 0) {
       if (PROJ_DEBUG) {
@@ -239,17 +227,76 @@ int handle_department_messages(int new_fd, const char *msg, char *current_dept) 
       }
     }
     
-    return 1;
+    return PROCEED_WITH_ITERATION;
   }
 }
 
-uint32_t process_department_message(char *buffer, int length, std::map<std::string, float> *db) {
+uint32_t process_student_message(std::string _buffer) {
   char *element;
   uint32_t e_pos = 0;
+  char *buffer = new char[_buffer.length() + 1];
+  strcpy(buffer, _buffer.c_str());
+  element = strtok((char*) buffer, "#");
+  int student_id = -1;
+  bool parse_gpa = false;
+  std::string interest = "";
+  std::ofstream f;
+  
+  while (element != NULL) {
+    switch(e_pos) {
+      case 0:
+        student_id = std::atoi(element);
+        if (PROJ_DEBUG) {
+          std::cout << "Captured student ID: " << student_id << "\n";
+        }
+        break;
+      case 1:
+        if (strcmp(element, "GPA") == 0) {
+          parse_gpa = true;
+        } else {
+          interest = element;
+          if (PROJ_DEBUG) {
+            std::cout << "Capture interest of Student " << student_id << ": " << interest << "\n";
+          }
+        }
+        break;
+      case 2:
+        if (parse_gpa) {
+          student_gpa = std::atof(element);
+          if (PROJ_DEBUG) {
+            std::cout << "Captured GPA of Student " << student_id << ": " << student_gpa << "\n";
+          }
+        }
+        break;
+      default:
+        std::cerr << "Shouldn't reach here\n";
+    }
+    
+    element = strtok(NULL, "#");
+    e_pos++;
+  }
+  
+  f.open(DATABASE_FILE, std::ios::app);
+  char line_buffer[MAXDATASIZE];
+  if (parse_gpa) {
+    sprintf(line_buffer, "S%d#GPA#%.1f\n", student_id, student_gpa);
+  } else {
+    sprintf(line_buffer, "S%d#%s\n", student_id, interest.c_str());
+  }
+  f << line_buffer;
+  f.close();
+  return 0;
+}
+
+uint32_t process_department_message(std::string _buffer) {
+  char *element;
+  uint32_t e_pos = 0;
+  char *buffer = new char[_buffer.length() + 1];
+  strcpy(buffer, _buffer.c_str());
+  element = strtok((char*) buffer, "#");
   std::string dept_program = "";
   float dept_program_min_gpa = 0;
   
-  element = strtok(buffer, "#");
   while (element != NULL) {
     switch(e_pos) {
       case 0:
@@ -263,7 +310,6 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
     e_pos++;
   }
   
-  db->insert(std::make_pair(dept_program, dept_program_min_gpa));
   std::ofstream f;
   f.open(DATABASE_FILE, std::ios::app);
   char line_buffer[MAXDATASIZE];
@@ -274,13 +320,23 @@ uint32_t process_department_message(char *buffer, int length, std::map<std::stri
   return 0;
 }
 
-bool check_department_completion(int *size) {
-  if (*size == NUM_DEPTS) {
-    //fm_phase1_completed();
+bool check_department_completion(int *d_size, int *s_size) {
+  std::cout << "D: " << *d_size << " S: " << *s_size << "\n";
+  if (*d_size == NUM_DEPTS && *s_size == NUM_STUDENTS) {
     am->display_phase1_completed();
-    *size = 0;
+    
+    *d_size = 0;
+    *s_size = 0;
     
     return true;
+  }
+  
+  if (*d_size > NUM_DEPTS) {
+    *d_size -= NUM_DEPTS;
+  }
+  
+  if (*s_size > NUM_STUDENTS) {
+    *s_size -= NUM_STUDENTS;
   }
   
   return false;
@@ -319,4 +375,29 @@ std::string get_client_ip_address(int sockfd) {
   return (std::string) ipstr;
 }
 
+bool build_database() {
+  sleep(2);
+  std::set<std::string> *members = new std::set<std::string>();
+  std::ifstream infile(DATABASE_FILE);
+  std::string line;
+  
+  while(std::getline(infile, line)) {
+    std::string name = "";
+    
+    if (line[0] == 'S') {
+      name = line[0] + line[1];
+      
+    } else {
+      name = line[0];
+    }
+    
+    members->insert(name);
+  }
+  
+  if (members->size() == NUM_STUDENTS + NUM_DEPTS) {
+    return true;
+  }
+  
+  return false;
+}
 

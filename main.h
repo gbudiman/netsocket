@@ -26,6 +26,12 @@
 
 #define SERVER "localhost"
 
+#define TCP_CLIENT 1
+#define TCP_SERVER 0
+
+#define PROCEED_WITH_ITERATION 1
+#define NO_MORE_ITERATION 0
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <math.h>
@@ -42,6 +48,7 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <vector>
 #include <map>

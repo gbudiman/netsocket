@@ -52,10 +52,10 @@ void DepartmentMessenger::display(int type, std::vector<std::string> *args) {
       << " and IP " << args->at(0) << "\n";
       break;
     case DMSG_ADM_CONNECTED:
-      std::cout << "Department " << d << " is now connected to the admission office\n";
+      std::cout << "Department" << d << " is now connected to the admission office\n";
       break;
     case DMSG_PROG_SENT:
-      std::cout << "Department " << d << " has sent " << args->at(0) << " to the admission office\n";
+      std::cout << "Department" << d << " has sent " << args->at(0) << " to the admission office\n";
       break;
     case DMSG_PROG_COMPLETED:
       std::cout << "Updating the admission office is done for Department " << d << "\n";

@@ -10,7 +10,14 @@
 #define Student_h
 
 #include "main.h"
+#include "StudentParser.hpp"
+#include "Socket.hpp"
 
+void spawn_iterative(int);
 void do_work(uint32_t);
+void spawn_one();
+
+int connect_to_admission_server(StudentParser*, uint32_t);
+int send_data_to_admission_server(int, int, StudentParser*);
 
 #endif /* Student_h */
