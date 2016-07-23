@@ -12,11 +12,10 @@
 #define CLIENT_IS_DEPARTMENT 1
 #define CLIENT_IS_STUDENT 2
 
-#define DATABASE_FILE "database.txt"
-
 #include "main.h"
 #include "AdmissionMessenger.hpp"
 #include "Socket.hpp"
+#include "Database.hpp"
 
 void create_empty_database_file();
 void create_tcp_and_process();
@@ -40,4 +39,5 @@ bool build_database();
 
 char receive_buffer[MAXDATASIZE];
 int receive_length;
+Database *db;
 #endif /* Admission_h */

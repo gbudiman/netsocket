@@ -1,11 +1,11 @@
 all: student admission department socket
 	g++ Student.o StudentParser.o StudentMessenger.o Socket.o -o Student -lsocket -lnsl -lresolv
-	g++ Admission.o AdmissionMessenger.o Socket.o -o Admission -lsocket -lnsl -lresolv
+	g++ Admission.o AdmissionMessenger.o Database.o Socket.o -o Admission -lsocket -lnsl -lresolv
 	g++ Department.o DepartmentParser.o DepartmentMessenger.o Socket.o -o Department -lsocket -lnsl -lresolv
 
 mac: student admission department socket
 	g++ Student.o StudentParser.o StudentMessenger.o Socket.o -o Student
-	g++ Admission.o AdmissionMessenger.o Socket.o -o Admission
+	g++ Admission.o AdmissionMessenger.o Database.o Socket.o -o Admission
 	g++ Department.o DepartmentParser.o DepartmentMessenger.o Socket.o -o Department
 
 socket: 
@@ -20,11 +20,14 @@ student_parser:
 student_messenger:
 	g++ -c StudentMessenger.cpp
 	
-admission: admission_messenger
+admission: admission_messenger database
 	g++ -c Admission.cpp
 
 admission_messenger: 
 	g++ -c AdmissionMessenger.cpp
+
+database:
+	g++ -c Database.cpp
 
 department: department_parser department_messenger
 	g++ -c Department.cpp

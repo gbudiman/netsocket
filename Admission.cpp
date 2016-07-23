@@ -24,10 +24,11 @@ void create_empty_database_file() {
   std::ofstream fs;
   fs.open(DATABASE_FILE, std::ios::out);
   fs.close();
+  db = new Database();
 }
 
 void make_admission_decision() {
-  std::cout << database->size() << "\n";
+  db->build();
 }
 
 void create_tcp_and_process() {
@@ -150,10 +151,15 @@ void create_tcp_and_process() {
       close(new_fd);
       exit(0);
     } else {
+      wait(NULL);
     }
     
     close(new_fd);
-    if (build_database()) {
+    if (db->check_is_complete()) {
+      if (ENABLE_PHASE_2) {
+        am->redisplay_tcp_ip();
+      }
+      
       break;
     }
   }
@@ -366,35 +372,5 @@ std::string get_client_ip_address(int sockfd) {
   
   inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof(ipstr));
   return (std::string) ipstr;
-}
-
-bool build_database() {
-  sleep(2);
-  std::set<std::string> *members = new std::set<std::string>();
-  std::ifstream infile(DATABASE_FILE);
-  std::string line;
-  int limit = ENABLE_PHASE_2 ? NUM_DEPTS + NUM_STUDENTS : NUM_DEPTS;
-  
-  while(std::getline(infile, line)) {
-    std::string name = "";
-    
-    if (line[0] == 'S') {
-      name = line[0] + line[1];
-      
-    } else {
-      name = line[0];
-    }
-    
-    members->insert(name);
-  }
-  
-  if (members->size() == limit) {
-    if (ENABLE_PHASE_2) {
-      am->redisplay_tcp_ip();
-    }
-    return true;
-  }
-  
-  return false;
 }
 

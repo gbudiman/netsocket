@@ -20,9 +20,11 @@
 #define ADMISSION_PORT "3950"
 #define ADMISSION_BACKLOG 24
 
+#define DATABASE_FILE "database.txt"
+
 #define MAXDATASIZE 255
 
-#define ENABLE_PHASE_2 0
+#define ENABLE_PHASE_2 1
 
 #define SERVER "localhost"
 
