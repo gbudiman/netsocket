@@ -93,6 +93,7 @@ void create_tcp_and_process() {
       while (1) {
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
         char current_dept;
+        char current_student;
         
         if (receive_length > 0) {
           std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
@@ -128,7 +129,7 @@ void create_tcp_and_process() {
               case CLIENT_IS_STUDENT:
                 can_continue = handle_student_messages(new_fd,
                                                        r_msg,
-                                                       &current_dept);
+                                                       &current_student);
                 break;
               case CLIENT_IS_DEPARTMENT:
                 can_continue = handle_department_messages(new_fd,
@@ -149,19 +150,9 @@ void create_tcp_and_process() {
       close(new_fd);
       exit(0);
     } else {
-//      wait(NULL);
-//      std::cout << tcp_client_type << "!\n";
-//      depts_completed++;
-//      switch (tcp_client_type) {
-//        case CLIENT_IS_STUDENT: students_completed++; break;
-//        case CLIENT_IS_DEPARTMENT: depts_completed++; break;
-//      }
     }
     
     close(new_fd);
-//    if (check_department_completion(&depts_completed, &students_completed)) {
-//      break;
-//    }
     if (build_database()) {
       break;
     }
@@ -173,6 +164,8 @@ int handle_student_messages(int new_fd, std::string msg, char *current_student) 
     if (PROJ_DEBUG) {
       std::cout << "TX_FIN signal received. Closing socket\n";
     }
+    
+    am->display_student_completed(*current_student);
     return NO_MORE_ITERATION;
   } else {
     int rand_wait = rand() % 500 + 500;
@@ -380,6 +373,7 @@ bool build_database() {
   std::set<std::string> *members = new std::set<std::string>();
   std::ifstream infile(DATABASE_FILE);
   std::string line;
+  int limit = ENABLE_PHASE_2 ? NUM_DEPTS + NUM_STUDENTS : NUM_DEPTS;
   
   while(std::getline(infile, line)) {
     std::string name = "";
@@ -394,7 +388,10 @@ bool build_database() {
     members->insert(name);
   }
   
-  if (members->size() == NUM_STUDENTS + NUM_DEPTS) {
+  if (members->size() == limit) {
+    if (ENABLE_PHASE_2) {
+      am->redisplay_tcp_ip();
+    }
     return true;
   }
   

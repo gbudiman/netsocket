@@ -48,6 +48,8 @@ void do_work(uint32_t id) {
   
   
   StudentParser *sp = new StudentParser(id);
+  sm = new StudentMessenger();
+  sm->set_student_name(id);
   connect_to_admission_server(sp, id);
   
   if (PROJ_DEBUG) {
@@ -59,7 +61,9 @@ void do_work(uint32_t id) {
 
 int connect_to_admission_server(StudentParser *sp, uint32_t student_id) {
   int sockfd = Socket::create_socket(TCP_CLIENT);
+  sm->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
   send_data_to_admission_server(student_id, sockfd, sp);
+  sm->display_all_applications_sent();
   close(sockfd);
   return 0;
 }

@@ -9,7 +9,19 @@ void AdmissionMesseger::display_tcp_ip(std::string port, std::string ip) {
   args->push_back(ip);
   args->push_back(port);
   
+  reuse_tcp_port = port;
+  reuse_ip_address = ip;
+  
   display(AMSG_P1_START, args);
+}
+
+void AdmissionMesseger::redisplay_tcp_ip() {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  
+  args->push_back(reuse_ip_address);
+  args->push_back(reuse_tcp_port);
+  
+  display(AMSG_P2_START, args);
 }
 
 void AdmissionMesseger::display_department_completed(char dept_name) {
@@ -25,6 +37,15 @@ void AdmissionMesseger::display_phase1_completed() {
   display(AMSG_P1_END);
 }
 
+void AdmissionMesseger::display_student_completed(char x) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  std::string student_name = "";
+  student_name += x;
+  
+  args->push_back(student_name);
+  display(AMSG_STUDENT_COMPLETED, args);
+}
+
 void AdmissionMesseger::display(int type) {
   display(type, NULL);
 }
@@ -32,6 +53,7 @@ void AdmissionMesseger::display(int type) {
 void AdmissionMesseger::display(int type, std::vector<std::string> *args) {
   switch(type) {
     case AMSG_P1_START:
+    case AMSG_P2_START:
       std::cout << "The admission office has TCP port " << args->at(1)
       << " and IP " << args->at(0) << "\n";
       break;
@@ -40,5 +62,9 @@ void AdmissionMesseger::display(int type, std::vector<std::string> *args) {
       break;
     case AMSG_P1_END:
       std::cout << "End of Phase 1 for the admission office\n";
+      break;
+    case AMSG_STUDENT_COMPLETED:
+      std::cout << "Admission office receive the application from Student" << args->at(0) << "\n";
+      break;
   }
 }

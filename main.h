@@ -22,7 +22,7 @@
 
 #define MAXDATASIZE 255
 
-#define ENABLE_PHASE_2 1
+#define ENABLE_PHASE_2 0
 
 #define SERVER "localhost"
 

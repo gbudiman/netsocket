@@ -11,6 +11,7 @@
 
 #include "main.h"
 #include "StudentParser.hpp"
+#include "StudentMessenger.hpp"
 #include "Socket.hpp"
 
 void spawn_iterative(int);
@@ -19,5 +20,7 @@ void spawn_one();
 
 int connect_to_admission_server(StudentParser*, uint32_t);
 int send_data_to_admission_server(int, int, StudentParser*);
+
+StudentMessenger *sm;
 
 #endif /* Student_h */
