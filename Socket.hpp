@@ -9,6 +9,7 @@ public:
   static std::string get_self_ip_address();
   static void* get_in_address(struct sockaddr);
   static int create_socket(int);
+  static int create_udp_socket(int, const char*, struct addrinfo*);
 };
 
 #endif

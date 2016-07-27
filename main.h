@@ -20,16 +20,23 @@
 #define ADMISSION_PORT "3950"
 #define ADMISSION_BACKLOG 24
 
+#define DEPARTMENT_BASE_UDP_PORT 21750
+#define STUDENT_BASE_UDP_PORT 22050
+
 #define DATABASE_FILE "database.txt"
 
 #define MAXDATASIZE 255
 
-#define ENABLE_PHASE_2 0
+#define DISABLE_PHASE_1 1
+#define ENABLE_PHASE_2 1
 
 #define SERVER "localhost"
 
 #define TCP_CLIENT 1
 #define TCP_SERVER 0
+
+#define UDP_LISTENER 1
+#define UDP_TALKER 0
 
 #define PROCEED_WITH_ITERATION 1
 #define NO_MORE_ITERATION 0

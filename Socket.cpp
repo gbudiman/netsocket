@@ -34,6 +34,54 @@ std::string Socket::get_self_ip_address() {
   return (std::string) ipstr;
 }
 
+int Socket::create_udp_socket(int type, const char *port, struct addrinfo *p) {
+  int sockfd = 0;
+  int rv;
+  struct addrinfo hints, *servinfo;
+  
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  
+  if (type == UDP_LISTENER) {
+    hints.ai_flags = AI_PASSIVE;
+  }
+  
+  if (type == UDP_LISTENER) {
+    if ((rv = getaddrinfo(SERVER, port, &hints, &servinfo)) != 0) {
+      std::cerr << "getaddrinfo udp_listener: " << gai_strerror(rv) << "\n";
+      return 1;
+    }
+  } else if (type == UDP_TALKER) {
+    if ((rv = getaddrinfo(SERVER, port, &hints, &servinfo)) != 0) {
+      std::cerr << "getaddrinfo udp_talker: " << gai_strerror(rv) << "\n";
+      return 1;
+    }
+  }
+  
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      continue;
+    }
+    
+    if (type == UDP_LISTENER) {
+      if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        close(sockfd);
+        continue;
+      }
+    }
+    
+    break;
+  }
+  
+  if (p == NULL) {
+    std::cerr << "Failed to create UDP socket\n";
+  }
+  
+  freeaddrinfo(servinfo);
+  return sockfd;
+}
+
 int Socket::create_socket(int type) {
   int sockfd = 0;
   struct addrinfo hints, *servinfo, *p;

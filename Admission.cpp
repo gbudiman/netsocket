@@ -14,9 +14,16 @@ void sigchld_handler(int s) {
 }
 
 int main() {
-  create_empty_database_file();
-  create_tcp_and_process();
-  make_admission_decision();
+  if (!DISABLE_PHASE_1) {
+    create_empty_database_file();
+    create_tcp_and_process();
+  }
+  
+  if (ENABLE_PHASE_2) {
+    create_udp_and_process();
+    //make_admission_decision();
+  }
+  
   return 0;
 }
 
@@ -33,6 +40,46 @@ void make_admission_decision() {
   
   if (PROJ_DEBUG) {
     db->debug_decision();
+  }
+}
+
+void create_udp_and_process() {
+  for (int s = 0; s < NUM_STUDENTS; s++) {
+    struct addrinfo hints, *servinfo, *p;
+    char port_s[MAXDATASIZE] = "";
+    int student_port = STUDENT_BASE_UDP_PORT + 100 * s;
+    sprintf(port_s, "%d", student_port);
+    int sockfd = 0;
+    int numbytes = 0;
+    int rv;
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    
+    if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+      std::cerr << "getaddrinfo talker: " << gai_strerror(rv);
+    }
+    
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        continue;
+      }
+      
+      break;
+    }
+    
+    if (p == NULL) {
+      std::cerr << "talker: failed to bind socket\n";
+    }
+    
+    if ((numbytes = sendto(sockfd, "HOLA", 4, 0, p->ai_addr, p->ai_addrlen)) == -1) {
+      perror("talker: sendto");
+    }
+    std::cout << "Sent " << numbytes << " bytes to port " << port_s << "\n";
+    
+    freeaddrinfo(servinfo);
+    close(sockfd);
   }
 }
 

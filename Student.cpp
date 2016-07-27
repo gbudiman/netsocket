@@ -33,7 +33,7 @@ void spawn_iterative(int n) {
         std::cerr << "Fork error at iteration " << i << "\n";
         break;
       default:
-        wait(NULL);
+        //wait(NULL);
         break;;
     }
   }
@@ -46,17 +46,83 @@ void do_work(uint32_t id) {
     std::cout << "Process " << ::getpid() << " created for student " << id << "\n";
   }
   
-  
   StudentParser *sp = new StudentParser(id);
   sm = new StudentMessenger();
   sm->set_student_name(id);
-  connect_to_admission_server(sp, id);
+  //connect_to_admission_server(sp, id);
+  wait_for_admission_response(id);
   
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " returned\n";
   }
   
   exit(0);
+}
+
+void wait_for_admission_response(uint32_t student_id) {
+  char port_s[MAXDATASIZE] = "";
+  int student_port = STUDENT_BASE_UDP_PORT + 100 * (student_id - 1);
+  sprintf(port_s, "%d", student_port);
+  char buffer[MAXDATASIZE] = "";
+  int numbytes = 0;
+  struct sockaddr_storage their_addr;
+  socklen_t addr_len;
+  
+  //int sockfd = Socket::create_udp_socket(UDP_LISTENER, port_s, p);
+  
+  int rv;
+  int sockfd = 0;
+  struct addrinfo hints, *servinfo, *p;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_PASSIVE;
+  
+  if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+    std::cerr << "getaddrinfo: " << gai_strerror(rv);
+  }
+  
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      perror("listener: socket");
+      continue;
+    }
+    
+    if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+      close(sockfd);
+      continue;
+    }
+    
+    break;
+  }
+  
+  if (p == NULL) {
+    perror("listener");
+  }
+  
+  freeaddrinfo(servinfo);
+  
+  memset(&hints, 0, sizeof(hints));
+  
+  std::cout << "Student " << student_id <<  " is waiting for Admission response on port " << port_s << "...\n";
+  
+  while(true) {
+    std::cout << "spinwaiting\n";
+    if ((numbytes = recvfrom(sockfd, buffer, MAXDATASIZE - 1, 0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+      perror("recvfrom");
+    }
+    
+    
+    if (numbytes > 0) {
+      buffer[numbytes] = '\0';
+      std::cout << "Student " << student_id << " received response " << buffer << "\n";
+      
+      if (strcmp(buffer, "HOLA") == 0) {
+        break;
+      }
+    }
+  }
+  
+  close(sockfd);
 }
 
 int connect_to_admission_server(StudentParser *sp, uint32_t student_id) {
