@@ -53,7 +53,7 @@ void create_udp_and_process() {
     int sockfd = 0;
     int numbytes = 0;
     int rv;
-    struct addrinfo hints, *servinfo = nullptr, *p = nullptr;
+    struct addrinfo hints, *servinfo = NULL, *p = NULL;
     char port_s[MAXDATASIZE] = "";
     char *decision_s = new char[d->size() + 1];
     memset(&hints, 0, sizeof(hints));
@@ -104,8 +104,8 @@ void create_udp_and_process() {
         close(sockfd);
       } else if (token_position == 2) {
         // Send admission decision to respective Department
-        servinfo = nullptr;
-        p = nullptr;
+        servinfo = NULL;
+        p = NULL;
         std::string message = "";
         char *message_s;
         char student_id_s = (char) student_id + 0x30;
