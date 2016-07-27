@@ -56,7 +56,7 @@ void spawn_iterative(int n) {
         std::cerr << "Fork error at iteration " << i << "\n";
         break;
       default:
-        wait(NULL);
+        //wait(NULL);
         break;;
     }
   }
@@ -91,11 +91,82 @@ int do_work(char d) {
   
   int connection_status = connect_to_admission_server(dp, d);
   
+  if (ENABLE_PHASE_2) {
+    wait_for_admission_response(d);
+  }
+  
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " returned\n";
   }
   
   return connection_status;
+}
+
+void wait_for_admission_response(char department_id) {
+  char port_s[MAXDATASIZE] = "";
+  int department_port = DEPARTMENT_BASE_UDP_PORT + 100 * (department_id - 0x41);
+  sprintf(port_s, "%d", department_port);
+  char buffer[MAXDATASIZE] = "";
+  int numbytes = 0;
+  struct sockaddr_storage their_addr;
+  socklen_t addr_len;
+  
+  int rv;
+  int sockfd = 0;
+  struct addrinfo hints, *servinfo, *p;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_PASSIVE;
+  
+  if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+    std::cerr << "getaddrinfo: " << gai_strerror(rv);
+  }
+  
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      perror("listener: socket");
+      continue;
+    }
+    
+    if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+      close(sockfd);
+      continue;
+    }
+    
+    break;
+  }
+  
+  if (p == NULL) {
+    perror("listener");
+  }
+  
+  freeaddrinfo(servinfo);
+  memset(&hints, 0, sizeof(hints));
+  
+  while(true) {
+    if ((numbytes = recvfrom(sockfd, buffer, MAXDATASIZE - 1, 0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+      std::cout << "Department " << department_id << " encountered recvfrom error\n";
+      perror("recvfrom");
+      break;
+    }
+    
+    if (numbytes > 0) {
+      buffer[numbytes] = '\0';
+      if (PROJ_DEBUG) {
+        std::cout << "Department " << department_id << " received response " << buffer << "\n";
+      }
+      
+      if (strcmp(buffer, "ADM_END") == 0) {
+        if (PROJ_DEBUG) {
+          std::cout << "ADM_END received. Terminating process\n";
+        }
+        
+        break;
+      }
+    }
+  }
+  
+  close(sockfd);
 }
 
 int connect_to_admission_server(DepartmentParser *dp, char dept_name) {

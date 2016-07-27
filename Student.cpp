@@ -49,7 +49,7 @@ void do_work(uint32_t id) {
   StudentParser *sp = new StudentParser(id);
   sm = new StudentMessenger();
   sm->set_student_name(id);
-  //connect_to_admission_server(sp, id);
+  connect_to_admission_server(sp, id);
   wait_for_admission_response(id);
   
   if (PROJ_DEBUG) {
@@ -103,20 +103,28 @@ void wait_for_admission_response(uint32_t student_id) {
   
   memset(&hints, 0, sizeof(hints));
   
-  std::cout << "Student " << student_id <<  " is waiting for Admission response on port " << port_s << "...\n";
+  if (PROJ_DEBUG) {
+    std::cout << "Student " << student_id <<  " is waiting for Admission response on port " << port_s << "...\n";
+  }
   
   while(true) {
-    std::cout << "spinwaiting\n";
     if ((numbytes = recvfrom(sockfd, buffer, MAXDATASIZE - 1, 0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+      std::cout << "Student " << student_id << " encountered recvfrom error\n";
       perror("recvfrom");
+      break;
     }
-    
     
     if (numbytes > 0) {
       buffer[numbytes] = '\0';
-      std::cout << "Student " << student_id << " received response " << buffer << "\n";
+      if (PROJ_DEBUG) {
+        std::cout << "Student " << student_id << " received response " << buffer << "\n";
+      }
       
-      if (strcmp(buffer, "HOLA") == 0) {
+      if (strcmp(buffer, "ADM_END") == 0) {
+        if (PROJ_DEBUG) {
+          std::cout << "ADM_END received. Terminating process\n";
+        }
+        
         break;
       }
     }

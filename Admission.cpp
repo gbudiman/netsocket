@@ -20,8 +20,8 @@ int main() {
   }
   
   if (ENABLE_PHASE_2) {
+    make_admission_decision();
     create_udp_and_process();
-    //make_admission_decision();
   }
   
   return 0;
@@ -44,25 +44,145 @@ void make_admission_decision() {
 }
 
 void create_udp_and_process() {
-  for (int s = 0; s < NUM_STUDENTS; s++) {
-    struct addrinfo hints, *servinfo, *p;
-    char port_s[MAXDATASIZE] = "";
-    int student_port = STUDENT_BASE_UDP_PORT + 100 * s;
-    sprintf(port_s, "%d", student_port);
+  //for (int s = 0; s < NUM_STUDENTS; s++) {
+  for (std::vector<std::string>::iterator d = db->decision->begin(); d != db->decision->end(); ++d) {
+    
+    int student_id = 0;
+    int token_position = 0;
+    char *element;
     int sockfd = 0;
     int numbytes = 0;
     int rv;
-    
+    struct addrinfo hints, *servinfo = nullptr, *p = nullptr;
+    char port_s[MAXDATASIZE] = "";
+    char *decision_s = new char[d->size() + 1];
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     
-    if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
-      std::cerr << "getaddrinfo talker: " << gai_strerror(rv);
+    std::copy(d->begin(), d->end(), decision_s);
+    decision_s[d->size()] = '\0';
+    element = std::strtok((char*) d->c_str(), "#");
+    while (element != NULL) {
+    
+      if (token_position == 0) {
+        student_id = atoi(element);
+        
+        int student_port = STUDENT_BASE_UDP_PORT + 100 * (student_id - 1);
+        sprintf(port_s, "%d", student_port);
+        
+        if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+          std::cerr << "getaddrinfo talker: " << gai_strerror(rv);
+        }
+        
+        for (p = servinfo; p != NULL; p = p->ai_next) {
+          if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            continue;
+          }
+          
+          break;
+        }
+        
+        if (p == NULL) {
+          std::cerr << "talker -> student: failed to bind socket\n";
+        }
+      } else if (token_position == 1) {
+        numbytes = sendto(sockfd, decision_s, strlen(decision_s), 0, p->ai_addr, p->ai_addrlen);
+        
+        if (PROJ_DEBUG) {
+          std::cout << "Message to student " << student_id << ": " << decision_s << "\n";
+          std::cout << "Sent " << numbytes << " bytes to port " << port_s << "\n";
+        }
+        
+        numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
+        
+        if (PROJ_DEBUG) {
+          std::cout << "End of transmission to student " << student_id << "\n";
+        }
+        
+        freeaddrinfo(servinfo);
+        close(sockfd);
+      } else if (token_position == 2) {
+        // Send admission decision to respective Department
+        servinfo = nullptr;
+        p = nullptr;
+        std::string message = "";
+        char *message_s;
+        char student_id_s = (char) student_id + 0x30;
+        char gpa_s[MAXDATASIZE] = "";
+        char department_id = element[0];
+        int department_port = DEPARTMENT_BASE_UDP_PORT + 100 * (department_id - 0x41);
+        sprintf(port_s, "%d", department_port);
+        sprintf(gpa_s, "%.1f", db->student_grades->at(student_id));
+        
+        message = "Student";
+        message += student_id_s;
+        message += "#";
+        message += gpa_s;
+        message += "#";
+        message += element;
+        message_s = new char[message.size() + 1];
+        std::copy(message.begin(), message.end(), message_s);
+        message_s[message.size()] = '\0';
+        
+        if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+          std::cerr << "getaddrinfo talker -> department: " << gai_strerror(rv);
+        }
+        
+        for (p = servinfo; p != NULL; p = p->ai_next) {
+          
+          if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            continue;
+          }
+          
+          break;
+        }
+      
+        if (p == NULL) {
+          std::cerr << "talker -> department: failed to bind socket\n";
+        }
+        
+        numbytes = sendto(sockfd, message_s, strlen(message_s), 0, p->ai_addr, p->ai_addrlen);
+        
+        if (numbytes == -1) {
+          perror("talker: sendto -> department");
+        }
+        
+        if (PROJ_DEBUG) {
+          std::cout << "Attempt to send message of size " << strlen(message_s);
+          std::cout << "Message to Department " << department_id << " at port " << port_s << "\n";
+          std::cout << numbytes << " bytes: " << message_s << "\n";
+        }
+        
+        close(sockfd);
+      }
+      
+      
+      element = strtok(NULL, "#");
+      token_position++;
     }
     
-    for (p = servinfo; p != NULL; p = p->ai_next) {
+    delete[] decision_s;
+  }
+  
+  // All departments have been notified of admission
+  // Tell each departments to close all their UDP sockets
+  for (int dept_id = 0; dept_id < NUM_DEPTS; dept_id++) {
+    char port_s[MAXDATASIZE] = "";
+    int sockfd = 0;
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    int numbytes = 0;
+    
+    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (dept_id));
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    
+    getaddrinfo(SERVER, port_s, &hints, &servinfo);
+    for(p = servinfo; p != NULL; p = p->ai_next) {
       if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        perror("talker -> department -> closure: socket");
         continue;
       }
       
@@ -70,14 +190,13 @@ void create_udp_and_process() {
     }
     
     if (p == NULL) {
-      std::cerr << "talker: failed to bind socket\n";
+      perror("talker -> department -> closure: failed to bind socket");
     }
     
-    if ((numbytes = sendto(sockfd, "HOLA", 4, 0, p->ai_addr, p->ai_addrlen)) == -1) {
-      perror("talker: sendto");
+    numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
+    if (PROJ_DEBUG) {
+      std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
     }
-    std::cout << "Sent " << numbytes << " bytes to port " << port_s << "\n";
-    
     freeaddrinfo(servinfo);
     close(sockfd);
   }

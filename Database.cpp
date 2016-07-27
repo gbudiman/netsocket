@@ -166,8 +166,11 @@ void Database::debug_database() {
 void Database::make_decision() {
   for (std::map<int, float>::iterator g = student_grades->begin(); g != student_grades->end(); ++g) {
     int student_id = g->first;
+    char student_id_s[MAXDATASIZE] = "";
     float student_gpa = g->second;
     bool admitted = false;
+    
+    sprintf(student_id_s, "%d", student_id);
     
     for (std::vector<std::string>::iterator p = student_interests->at(student_id)->begin(); p != student_interests->at(student_id)->end() && !admitted; ++p) {
       
@@ -176,7 +179,8 @@ void Database::make_decision() {
         float min_gpa = department_programs->at(*p);
         
         if (student_gpa >= min_gpa) {
-          std::string dec_s = "Accept#" + *p + "department" + p[0];
+          std::string dec_s = "";
+          dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p[0];
           decision->push_back(dec_s);
           admitted = true;
         }
@@ -184,7 +188,9 @@ void Database::make_decision() {
     }
     
     if (!admitted) {
-      decision->push_back("Reject");
+      std::string dec_s = "";
+      dec_s += (std::string) student_id_s + "#Reject";
+      decision->push_back(dec_s);
     }
   }
 }

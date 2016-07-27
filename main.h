@@ -9,7 +9,9 @@
 #ifndef main_h
 #define main_h
 
-#define PROJ_DEBUG 0
+#define PROJ_DEBUG 1
+#define DISABLE_PHASE_1 0
+#define ENABLE_PHASE_2 1
 
 #define NUM_STUDENTS 5
 #define NUM_DEPTS 3
@@ -26,9 +28,6 @@
 #define DATABASE_FILE "database.txt"
 
 #define MAXDATASIZE 255
-
-#define DISABLE_PHASE_1 1
-#define ENABLE_PHASE_2 1
 
 #define SERVER "localhost"
 

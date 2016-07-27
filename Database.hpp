@@ -13,15 +13,16 @@ public:
   void build();
   void make_decision();
   void debug_decision();
+  
+  std::map<int, float> *student_grades;
+  std::vector<std::string> *decision;
 private:
   void process_student_data(std::string);
   void process_department_data(std::string);
   void debug_database();
   
-  std::map<int, float> *student_grades;
   std::map<int, std::vector<std::string>*> *student_interests;
   std::map<std::string, float> *department_programs;
-  std::vector<std::string> *decision;
 };
 
 #endif

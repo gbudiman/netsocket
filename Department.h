@@ -16,6 +16,7 @@ void wait_for_children();
 int do_work(char);
 int connect_to_admission_server(DepartmentParser*, char);
 int send_data_to_admission_server(char, int, DepartmentParser*);
+void wait_for_admission_response(char);
 void spawn_recursive(int);
 void spawn_iterative(int);
 void spawn_one();
