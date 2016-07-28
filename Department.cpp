@@ -21,6 +21,7 @@ int main() {
     //sleep(10);
     //std::cout << "begin phase 2\n";
   }
+  sleep(2);
   return 0;
 }
 

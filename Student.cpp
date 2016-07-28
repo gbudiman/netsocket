@@ -15,6 +15,7 @@ int main() {
   spawn_iterative(NUM_STUDENTS);
   //spawn_one();
 
+  sleep(2);
   return 0;
 }
 

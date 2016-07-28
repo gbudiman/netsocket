@@ -187,7 +187,8 @@ void Database::make_decision() {
         
         if (student_gpa_rd >= min_gpa_rd) {
           std::string dec_s = "";
-          dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p[0];
+          dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p->at(0);
+          std::cout << " --> " << dec_s << "\n";
           decision->push_back(dec_s);
           
           if (PROJ_DEBUG) {
