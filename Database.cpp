@@ -4,6 +4,8 @@ Database::Database() {
   
 }
 
+// Quick check if student's interest matches programs
+// offered by any departments
 bool Database::has_program(char *x) {
   std::ifstream infile(DATABASE_FILE);
   std::string line;
@@ -29,6 +31,9 @@ bool Database::has_program(char *x) {
   return is_valid_program;
 }
 
+// Check whether all Students and Departments have completed
+// transmitting data
+// When execute_build is true, build database
 bool Database::check_is_complete(bool execute_build) {
   //sleep(2);
   std::set<std::string> *members = new std::set<std::string>();
@@ -78,6 +83,7 @@ void Database::build() {
   }
 }
 
+// Build database by processing Students data
 void Database::process_student_data(std::string x) {
   char *element;
   uint32_t e_pos = 0;
@@ -127,21 +133,26 @@ void Database::process_student_data(std::string x) {
   if (parse_gpa) {
     if (student_grades->find(student_id) == student_grades->end()) {
       // student not found
+      // insert new record
       student_grades->insert(std::make_pair(student_id, student_gpa));
     } else {
+      // update when student already exists
       student_grades->at(student_id) = student_gpa;
     }
   } else {
     if (student_interests->find(student_id) == student_interests->end()) {
       // no interest found
+      // create empty vector first
       std::vector<std::string> *k = new std::vector<std::string>();
       student_interests->insert(std::make_pair(student_id, k));
     }
     
+    // Insert new record
     student_interests->at(student_id)->push_back(interest);
   }
 }
 
+// Build database by processing Department data
 void Database::process_department_data(std::string x) {
   char *element;
   uint32_t e_pos = 0;
@@ -189,6 +200,8 @@ void Database::debug_database() {
   }
 }
 
+// Finalize admission decision
+// And store admission strings to be used for packets tranmission later
 void Database::make_decision() {
   for (std::map<int, float>::iterator g = student_grades->begin(); g != student_grades->end(); ++g) {
     int student_id = g->first;
@@ -199,8 +212,10 @@ void Database::make_decision() {
     
     sprintf(student_id_s, "%d", student_id);
     
+    // Iterate through each students
     for (std::vector<std::string>::iterator p = student_interests->at(student_id)->begin(); p != student_interests->at(student_id)->end() && !admitted; ++p) {
       
+      // Check their interests match any of the offered programs
       if (department_programs->find(*p) != department_programs->end()) {
         matching_interest++;
         std::string program_application = *p;
@@ -213,19 +228,26 @@ void Database::make_decision() {
           std::cout << student_id << ": " << student_gpa_rd << " >=? " << min_gpa_rd << "\n";
         }
         
+        // Now check the GPA requirement
         if (student_gpa_rd >= min_gpa_rd) {
           std::string dec_s = "";
           dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p->at(0);
+          
+          // Insert new admittance record to decision table
           decision->push_back(dec_s);
           
           if (PROJ_DEBUG) {
             std::cout << "   Accept: " << p[0] << "\n";
           }
+          
+          // Admit student. No longer need to iterate through
           admitted = true;
         }
       }
     }
     
+    // Only when student has matching interest but not yet admitted
+    // Insert new rejection record to decision table
     if (!admitted && matching_interest > 0) {
       std::string dec_s = "";
       dec_s += (std::string) student_id_s + "#Reject";

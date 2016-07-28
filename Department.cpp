@@ -13,15 +13,7 @@
 int main() {
   spawn_iterative(NUM_DEPTS);
   //spawn_one();
-  // wait(NULL);
-  
-  // wait_for_children();
-  
-  if (ENABLE_PHASE_2) {
-    //sleep(10);
-    //std::cout << "begin phase 2\n";
-  }
-  sleep(2);
+  sleep(2); // pause before exiting just in case there is unflushed buffer
   return 0;
 }
 
@@ -50,7 +42,7 @@ void spawn_iterative(int n) {
   for (int i = 0; i < n; i++) {
     switch(fork()) {
       case 0:
-        do_work(i + 0x41);
+        do_work(i + 0x41); // ASCII: int(0) to char(A)
         exit(0);
         break;
       case -1:
@@ -90,9 +82,11 @@ int do_work(char d) {
     std::cout << "Process " << ::getpid() << " created for department " << d << "\n";
   }
   
+  // Set up TCP connection and process data
   int connection_status = connect_to_admission_server(dp, d);
   
   if (ENABLE_PHASE_2) {
+    // Set up UDP connection and process data
     wait_for_admission_response(d);
   }
   
@@ -121,6 +115,7 @@ void wait_for_admission_response(char department_id) {
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_flags = AI_PASSIVE;
   
+  // Setup UDP socket
   if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
   }
@@ -145,6 +140,7 @@ void wait_for_admission_response(char department_id) {
   
   freeaddrinfo(servinfo);
   
+  // Now listen to incoming UDP packets
   while(true) {
     if ((numbytes = recvfrom(sockfd, buffer, MAXDATASIZE - 1, 0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
       std::cout << "Using port " << port_s << "\n";
@@ -164,13 +160,17 @@ void wait_for_admission_response(char department_id) {
         std::cout << "Department " << department_id << " received response " << buffer << "\n";
       }
       
+      // Admission is done sending admitted students data
       if (strcmp(buffer, "ADM_END") == 0) {
         if (PROJ_DEBUG) {
           std::cout << "ADM_END received. Terminating process\n";
         }
         
         break;
-      } else {
+      }
+      
+      // Admitted student data received
+      else {
         char element[MAXDATASIZE];
         strncpy(element, buffer, 8);
         element[8] = '\0';
@@ -185,12 +185,16 @@ void wait_for_admission_response(char department_id) {
 }
 
 int connect_to_admission_server(DepartmentParser *dp, char dept_name) {
+  // Create TCP socket
   int sockfd = Socket::create_socket(TCP_CLIENT);
   dm->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
   dm->display_connected();
+  
+  // Sent data trhough
   send_data_to_admission_server(dept_name, sockfd, dp);
   dm->display_phase1_completed();
 
+  // Close TCP socket
   close(sockfd);
   return 0;
 }
@@ -201,10 +205,13 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
   char d_msg[MAXDATASIZE];
   char adm_resp[MAXDATASIZE];
   
+  // Send introduction packet
+  // Identifying self to Admission server
   sprintf(d_msg, "I_AM_DEPARTMENT#%c", dept_name);
   len = (int) strlen(d_msg);
   send(sockfd, d_msg, len, 0);
   
+  // Wait for Admission reply
   while(1) {
     recv(sockfd, adm_resp, sizeof(adm_resp), 0);
     
@@ -224,8 +231,10 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     std::cout << "Admission has recognized department. Now sending data...\n";
   }
   
+  // Iterate through all program data
   for (std::map<std::string, float>::iterator r = dp->requirements->begin(); r != dp->requirements->end(); ++r) {
     
+    // Send one program data
     sprintf(d_msg, "%s#%.1f", r->first.c_str(), r->second);
     len = (int) strlen(d_msg);
     bytes_sent = (int) send(sockfd, d_msg, len, 0);
@@ -237,6 +246,7 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
       std::cout << "Waiting for acknowledgement from Admission Server...\n";
     }
     
+    // Wait for acknowledgement
     while(1) {
       recv(sockfd, adm_resp, sizeof(adm_resp), 0);
       
@@ -252,6 +262,7 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     }
   }
   
+  // Tell Admission all data has been transmitted
   sprintf(d_msg, "TX_FIN");
   bytes_sent = send(sockfd, d_msg, len, 0);
   
@@ -260,7 +271,6 @@ int send_data_to_admission_server(char dept_name, int sockfd, DepartmentParser *
     std::cout << "Done transmitting!\n";
   }
   
-  // fm_self_all_program_sent(dept_name);
   dm->display_all_program_sent();
   
   return 0;

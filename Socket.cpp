@@ -34,6 +34,7 @@ std::string Socket::get_self_ip_address() {
   return (std::string) ipstr;
 }
 
+// Unused
 int Socket::create_udp_socket(int type, const char *port, struct addrinfo *p) {
   int sockfd = 0;
   int rv;

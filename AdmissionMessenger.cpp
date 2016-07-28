@@ -88,26 +88,38 @@ void AdmissionMesseger::display(int type, std::vector<std::string> *args) {
   switch(type) {
     case AMSG_P1_START:
     case AMSG_P2_START:
-      std::cout << "The admission office has TCP port " << args->at(1)
+      std::cout << "The admission office has TCP port "
+      << args->at(1)
       << " and IP address " << args->at(0) << "\n";
       break;
     case AMSG_DEPT_COMPLETED:
-      std::cout << "Received the program list from Department" << args->at(0) << "\n";
+      std::cout << "Received the program list from Department"
+      << args->at(0) << "\n";
       break;
     case AMSG_P1_END:
       std::cout << "End of Phase 1 for the admission office\n";
       break;
     case AMSG_STUDENT_COMPLETED:
-      std::cout << "Admission office receive the application from Student" << args->at(0) << "\n";
+      std::cout << "Admission office receive the application from Student"
+      << args->at(0)
+      << "\n";
       break;
     case AMSG_UDP_CREATED:
-      std::cout << "The admission office has UDP port " << args->at(1) << " and IP " << args->at(0) << " for Phase 2\n";
+      std::cout << "The admission office has UDP port "
+      << args->at(1)
+      << " and IP "
+      << args->at(0)
+      << " for Phase 2\n";
       break;
     case AMSG_STUDENT_RESULT:
-      std::cout << "The admission office has send the application result to Student" << args->at(0) << "\n";
+      std::cout << "The admission office has send the application result to Student"
+      << args->at(0)
+      << "\n";
       break;
     case AMSG_DEPARTMENT_RESULT:
-      std::cout << "The admission office has send one admitted student to Department" << args->at(0) << "\n";
+      std::cout << "The admission office has send one admitted student to Department"
+      << args->at(0)
+      << "\n";
       break;
     case AMSG_P2_END:
       std::cout << "End of Phase 2 for the admission office\n";

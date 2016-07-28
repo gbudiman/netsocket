@@ -9,10 +9,12 @@
 #include <stdio.h>
 #include "Admission.h"
 
+// From BeeJ's
 void sigchld_handler(int s) {
   while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+// Main program entry
 int main() {
   if (!DISABLE_PHASE_1) {
     create_empty_database_file();
@@ -27,6 +29,7 @@ int main() {
   return 0;
 }
 
+// Truncate all database entries
 void create_empty_database_file() {
   std::ofstream fs;
   fs.open(DATABASE_FILE, std::ios::out);
@@ -34,6 +37,7 @@ void create_empty_database_file() {
   db = new Database();
 }
 
+// Build database into decisions data structures
 void make_admission_decision() {
   db->build();
   db->make_decision();
@@ -43,12 +47,13 @@ void make_admission_decision() {
   }
 }
 
+// UDP communications
 void create_udp_and_process() {
   std::map<char, std::vector<char*> > department_admission_messages = *new std::map<char, std::vector<char*> >();
   std::ofstream f;
   f.open(DATABASE_FILE, std::ios::app);
   
-  //for (int s = 0; s < NUM_STUDENTS; s++) {
+  // For each decisions
   for (std::vector<std::string>::iterator d = db->decision->begin(); d != db->decision->end(); ++d) {
     
     int student_id = 0;
@@ -67,8 +72,13 @@ void create_udp_and_process() {
     std::copy(d->begin(), d->end(), decision_s);
     decision_s[d->size()] = '\0';
     element = std::strtok((char*) d->c_str(), "#");
+    
+    // Decision is in format <student_id>#<Accept/Reject>#Program#Department
+    // We tokenize with # as the needle
     while (element != NULL) {
     
+      // First token
+      // Read student_id and create socket
       if (token_position == 0) {
         student_id = atoi(element);
         
@@ -90,7 +100,13 @@ void create_udp_and_process() {
         if (p == NULL) {
           std::cerr << "talker -> student: failed to bind socket\n";
         }
-      } else if (token_position == 1) {
+      }
+      
+      // Second token
+      // Send accept/reject to Students
+      else if (token_position == 1) {
+        
+        // Skip the first 2 characters per project spec
         numbytes = sendto(sockfd, &(decision_s[2]), strlen(decision_s) - 2, 0, p->ai_addr, p->ai_addrlen);
         
         if (PROJ_DEBUG) {
@@ -98,23 +114,29 @@ void create_udp_and_process() {
           std::cout << "Sent " << numbytes << " bytes to port " << port_s << "\n";
         }
         
+        // Tell Students to close their UDP socket
         numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
         
+        // Print to STDOUT
         am->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
         am->display_student_admission_result((char) student_id + 0x30);
+        
         if (PROJ_DEBUG) {
           std::cout << "End of transmission to student " << student_id << "\n";
         }
         
+        // Write to database of packets sent to Students
         f << &(decision_s[2]);
         f << "\n";
         
+        // Then close Admission's UDP socket
         freeaddrinfo(servinfo);
         close(sockfd);
-      } else if (token_position == 2) {
-        // Send admission decision to respective Department
-        // servinfo = NULL;
-        // p = NULL;
+      }
+      
+      // Third token
+      // Group decisions based on Departments
+      else if (token_position == 2) {
         std::string message = "";
         char *message_s;
         char student_id_s = (char) student_id + 0x30;
@@ -149,9 +171,7 @@ void create_udp_and_process() {
     delete[] decision_s;
   }
   
-  // All departments have been notified of admission
-  // Tell each departments to close all their UDP sockets
-  //for (std::vector<char*>::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
+  // Now send decisions to each Departments
   for (std::map<char, std::vector<char*> >::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
     char port_s[MAXDATASIZE] = "";
     int rv;
@@ -182,6 +202,8 @@ void create_udp_and_process() {
       std::cerr << "talker -> department: failed to bind socket\n";
     }
     
+    // It's possible multiple students are admitted to one department
+    // Iterate through
     for (std::vector<char*>::iterator m = d->second.begin(); m != d->second.end(); ++m) {
       char *message_s = *m;
       numbytes = sendto(sockfd, message_s, strlen(message_s), 0, p->ai_addr, p->ai_addrlen);
@@ -207,6 +229,7 @@ void create_udp_and_process() {
       usleep(250);
     }
     
+    // Tell Department to close their UDP socket
     numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
     if (PROJ_DEBUG) {
       std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
@@ -218,44 +241,11 @@ void create_udp_and_process() {
     usleep(250);
   }
   
-//  for (int dept_id = 0; dept_id < NUM_DEPTS; dept_id++) {
-//    char port_s[MAXDATASIZE] = "";
-//    int sockfd = 0;
-//    struct addrinfo hints, *servinfo, *p;
-//    int rv;
-//    int numbytes = 0;
-//    
-//    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (dept_id));
-//    memset(&hints, 0, sizeof(hints));
-//    hints.ai_family = AF_INET;
-//    hints.ai_socktype = SOCK_DGRAM;
-//    
-//    getaddrinfo(SERVER, port_s, &hints, &servinfo);
-//    for(p = servinfo; p != NULL; p = p->ai_next) {
-//      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-//        perror("talker -> department -> closure: socket");
-//        continue;
-//      }
-//      
-//      break;
-//    }
-//    
-//    if (p == NULL) {
-//      perror("talker -> department -> closure: failed to bind socket");
-//    }
-//    
-//    numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
-//    if (PROJ_DEBUG) {
-//      std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
-//    }
-//    freeaddrinfo(servinfo);
-//    close(sockfd);
-// }
-  
   am->display_phase2_completed();
   f.close();
 }
 
+// TCP communications
 void create_tcp_and_process() {
   srand(time(NULL));
   
@@ -268,13 +258,11 @@ void create_tcp_and_process() {
   
   struct sigaction sa;
   
+  // create socket and bind and print to STDOUT
   sockfd = Socket::create_socket(TCP_SERVER);
   am->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
   
-  
-/////////////////////////////
-// LISTEN()
-/////////////////////////////
+  // listen
   if (listen(sockfd, ADMISSION_BACKLOG) == -1) {
     perror("listen");
     exit(-1);
@@ -292,26 +280,25 @@ void create_tcp_and_process() {
     std::cout << "Admission Server: waiting for connections...\n";
   }
   
+  // wait for incoming connections
   while(1) {
     sin_size = sizeof(their_addr);
-/////////////////////////////
-// ACCEPT()
-/////////////////////////////
     new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &sin_size);
     if (new_fd == -1) {
-      //perror("accept");
       continue;
     }
-    
     
     if (PROJ_DEBUG) {
       std::cout << "Admission Server: got connection from " << s << "\n";
     }
 
+    // incoming connections, now fork process
     if (!fork()) {
+      // Child process don't need parent's socket, close it
       close(sockfd);
       int matching_program = 0;
       
+      // wait for incoming packets
       while (1) {
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
         char current_dept;
@@ -320,6 +307,7 @@ void create_tcp_and_process() {
         if (receive_length > 0) {
           std::string r_msg = debug_receive_buffer(receive_buffer, receive_length);
           
+          // First packet received because tcp_client_type has not been set
           if (tcp_client_type == 0) {
             if (PROJ_DEBUG) {
               std::cout << "Received introduction: " << r_msg << "\n";
@@ -333,6 +321,7 @@ void create_tcp_and_process() {
               std::cerr << "Unrecognized introduction: " << r_msg << "\n";
             }
             
+            // Now set tcp_client_type accordingly based on handshake message
             if (tcp_client_type > 0) {
               if (PROJ_DEBUG) {
                 std::cout << "tcp_client_type set to " << tcp_client_type << "\n";
@@ -341,12 +330,16 @@ void create_tcp_and_process() {
                 perror("adm_recogniztion");
               }
             }
-          } else {
+          }
+          
+          // This time child process knows who it's talking to
+          else {
             int can_continue = 0;
             if (PROJ_DEBUG) {
               std::cout << "Entering core communication phase with tcp_client_type " << tcp_client_type << "\n";
             }
             
+            // Process the messages accordingly
             switch (tcp_client_type) {
               case CLIENT_IS_STUDENT:
                 can_continue = handle_student_messages(new_fd,
@@ -363,9 +356,13 @@ void create_tcp_and_process() {
                 std::cerr << "tcp_client_type is not set: " << tcp_client_type << "\n";
             }
             
+            // Check for communication termination
             if (can_continue == 0) {
+              
+              // Only for students
+              // Check for valid applications
+              // Then reply accordingly
               if (tcp_client_type == CLIENT_IS_STUDENT) {
-                
                 if (matching_program == 0) {
                   send(new_fd, "0", 1, 0);
                 } else {
@@ -378,13 +375,20 @@ void create_tcp_and_process() {
         }
       }
       
+      // Child process is complete
+      // Close socket
       close(new_fd);
       exit(0);
     } else {
       wait(NULL);
     }
     
+    
+    // parent process is complete
+    // Close socket
     close(new_fd);
+    
+    // Check if all students and departments have completed sending data
     if (db->check_is_complete()) {
       am->display_phase1_completed();
       if (ENABLE_PHASE_2) {
@@ -397,6 +401,8 @@ void create_tcp_and_process() {
 }
 
 int handle_student_messages(int new_fd, std::string msg, char *current_student, int *matching_program) {
+  
+  // Signals that Student has completed sending all data
   if (strcmp(msg.c_str(), "TX_FIN") == 0) {
     if (PROJ_DEBUG) {
       std::cout << "TX_FIN signal received. Closing socket\n";
@@ -404,7 +410,10 @@ int handle_student_messages(int new_fd, std::string msg, char *current_student, 
     
     am->display_student_completed(*current_student);
     return NO_MORE_ITERATION;
-  } else {
+  }
+  
+  // Data packet from Student
+  else {
     int rand_wait = rand() % 500 + 500;
     usleep(rand_wait);
     char interest[3] = "\0";
@@ -417,6 +426,7 @@ int handle_student_messages(int new_fd, std::string msg, char *current_student, 
       }
       *current_student = receive_buffer[0];
       
+      // Reply with acknowledgement
       if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
         perror("student ack");
       } else {
@@ -427,8 +437,9 @@ int handle_student_messages(int new_fd, std::string msg, char *current_student, 
     return PROCEED_WITH_ITERATION;
   }
 }
-                       
+
 int handle_department_messages(int new_fd, const char *msg, char *current_dept) {
+  // Signals end of transmission from Department
   if (strcmp(msg, "TX_FIN") == 0) {
     if (PROJ_DEBUG) {
       std::cout << "TX_FIN signal received. Closing socket " << new_fd << "\n";
@@ -436,7 +447,10 @@ int handle_department_messages(int new_fd, const char *msg, char *current_dept) 
     
     am->display_department_completed(*current_dept);
     return NO_MORE_ITERATION;
-  } else {
+  }
+  
+  // Data packet from Department
+  else {
     int rand_wait = rand() % 500 + 500;
     usleep(rand_wait);
     int pdm_error;
@@ -452,6 +466,8 @@ int handle_department_messages(int new_fd, const char *msg, char *current_dept) 
       if (PROJ_DEBUG) {
         std::cout << "Setting currend dept to " << *current_dept << "\n";
       }
+      
+      // Reply with acknowledgement
       if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
         perror("dept ack");
       } else {
