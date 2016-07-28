@@ -116,6 +116,7 @@ void wait_for_admission_response(char department_id) {
   int rv;
   int sockfd = 0;
   struct addrinfo hints, *servinfo, *p;
+  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_flags = AI_PASSIVE;
@@ -143,10 +144,10 @@ void wait_for_admission_response(char department_id) {
   }
   
   freeaddrinfo(servinfo);
-  memset(&hints, 0, sizeof(hints));
   
   while(true) {
     if ((numbytes = recvfrom(sockfd, buffer, MAXDATASIZE - 1, 0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+      std::cout << "Using port " << port_s << "\n";
       std::cout << "Department " << department_id << " encountered recvfrom error\n";
       perror("recvfrom");
       break;

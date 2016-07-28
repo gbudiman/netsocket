@@ -44,6 +44,7 @@ void make_admission_decision() {
 }
 
 void create_udp_and_process() {
+  std::map<char, std::vector<char*>> department_admission_messages = *new std::map<char, std::vector<char*>>();
   std::ofstream f;
   f.open(DATABASE_FILE, std::ios::app);
   
@@ -112,8 +113,8 @@ void create_udp_and_process() {
         close(sockfd);
       } else if (token_position == 2) {
         // Send admission decision to respective Department
-        servinfo = NULL;
-        p = NULL;
+        // servinfo = NULL;
+        // p = NULL;
         std::string message = "";
         char *message_s;
         char student_id_s = (char) student_id + 0x30;
@@ -133,37 +134,11 @@ void create_udp_and_process() {
         std::copy(message.begin(), message.end(), message_s);
         message_s[message.size()] = '\0';
         
-        if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
-          std::cerr << "getaddrinfo talker -> department: " << gai_strerror(rv);
+        if (department_admission_messages.find(department_id) == department_admission_messages.end()) {
+          department_admission_messages.insert(std::make_pair(department_id, *new std::vector<char*>()));
         }
         
-        for (p = servinfo; p != NULL; p = p->ai_next) {
-          if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            continue;
-          }
-          break;
-        }
-      
-        if (p == NULL) {
-          std::cerr << "talker -> department: failed to bind socket\n";
-        }
-        
-        numbytes = sendto(sockfd, message_s, strlen(message_s), 0, p->ai_addr, p->ai_addrlen);
-        
-        am->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
-        am->display_department_admission_result(department_id);
-        if (numbytes == -1) {
-          perror("talker: sendto -> department");
-        }
-        
-        if (PROJ_DEBUG) {
-          std::cout << "Attempt to send message of size " << strlen(message_s);
-          std::cout << "Message to Department " << department_id << " at port " << port_s << "\n";
-          std::cout << numbytes << " bytes: " << message_s << "\n";
-        }
-        
-        f << message_s << "\n";
-        close(sockfd);
+        department_admission_messages.at(department_id).push_back(message_s);
       }
       
       
@@ -176,39 +151,106 @@ void create_udp_and_process() {
   
   // All departments have been notified of admission
   // Tell each departments to close all their UDP sockets
-  for (int dept_id = 0; dept_id < NUM_DEPTS; dept_id++) {
+  //for (std::vector<char*>::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
+  for (std::map<char, std::vector<char*>>::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
     char port_s[MAXDATASIZE] = "";
-    int sockfd = 0;
-    struct addrinfo hints, *servinfo, *p;
     int rv;
-    int numbytes = 0;
+    int sockfd = 0;
+    int numbytes;
+    char dept_id = d->first;
+    struct addrinfo hints, *servinfo, *p;
+    bool udp_ip_displayed = false;
     
-    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (dept_id));
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     
-    getaddrinfo(SERVER, port_s, &hints, &servinfo);
-    for(p = servinfo; p != NULL; p = p->ai_next) {
+    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (dept_id - 0x41));
+    
+    if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+      std::cerr << "getaddrinfo talker -> department: " << gai_strerror(rv);
+    }
+    
+    for (p = servinfo; p != NULL; p = p->ai_next) {
       if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-        perror("talker -> department -> closure: socket");
         continue;
       }
-      
       break;
     }
     
     if (p == NULL) {
-      perror("talker -> department -> closure: failed to bind socket");
+      std::cerr << "talker -> department: failed to bind socket\n";
+    }
+    
+    for (std::vector<char*>::iterator m = d->second.begin(); m != d->second.end(); ++m) {
+      char *message_s = *m;
+      numbytes = sendto(sockfd, message_s, strlen(message_s), 0, p->ai_addr, p->ai_addrlen);
+      
+      
+      if (!udp_ip_displayed) {
+        am->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
+        udp_ip_displayed = true;
+      }
+      
+      am->display_department_admission_result(dept_id);
+      if (numbytes == -1) {
+        perror("talker: sendto -> department");
+      }
+      
+      if (PROJ_DEBUG) {
+        std::cout << "Attempt to send message of size " << strlen(message_s) << "\n";
+        std::cout << "Message to Department " << dept_id << " at port " << port_s << "\n";
+        std::cout << numbytes << " bytes: " << message_s << "\n";
+      }
+      
+      f << message_s << "\n";
+      usleep(250);
     }
     
     numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
     if (PROJ_DEBUG) {
       std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
     }
-    freeaddrinfo(servinfo);
+    
     close(sockfd);
+    freeaddrinfo(servinfo);
+    dept_id++;
+    usleep(250);
   }
+  
+//  for (int dept_id = 0; dept_id < NUM_DEPTS; dept_id++) {
+//    char port_s[MAXDATASIZE] = "";
+//    int sockfd = 0;
+//    struct addrinfo hints, *servinfo, *p;
+//    int rv;
+//    int numbytes = 0;
+//    
+//    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (dept_id));
+//    memset(&hints, 0, sizeof(hints));
+//    hints.ai_family = AF_INET;
+//    hints.ai_socktype = SOCK_DGRAM;
+//    
+//    getaddrinfo(SERVER, port_s, &hints, &servinfo);
+//    for(p = servinfo; p != NULL; p = p->ai_next) {
+//      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+//        perror("talker -> department -> closure: socket");
+//        continue;
+//      }
+//      
+//      break;
+//    }
+//    
+//    if (p == NULL) {
+//      perror("talker -> department -> closure: failed to bind socket");
+//    }
+//    
+//    numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
+//    if (PROJ_DEBUG) {
+//      std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
+//    }
+//    freeaddrinfo(servinfo);
+//    close(sockfd);
+// }
   
   am->display_phase2_completed();
   f.close();
