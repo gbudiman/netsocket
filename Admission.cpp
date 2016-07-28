@@ -44,7 +44,7 @@ void make_admission_decision() {
 }
 
 void create_udp_and_process() {
-  std::map<char, std::vector<char*>> department_admission_messages = *new std::map<char, std::vector<char*>>();
+  std::map<char, std::vector<char*> > department_admission_messages = *new std::map<char, std::vector<char*> >();
   std::ofstream f;
   f.open(DATABASE_FILE, std::ios::app);
   
@@ -152,7 +152,7 @@ void create_udp_and_process() {
   // All departments have been notified of admission
   // Tell each departments to close all their UDP sockets
   //for (std::vector<char*>::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
-  for (std::map<char, std::vector<char*>>::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
+  for (std::map<char, std::vector<char*> >::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
     char port_s[MAXDATASIZE] = "";
     int rv;
     int sockfd = 0;
