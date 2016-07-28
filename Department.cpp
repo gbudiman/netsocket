@@ -109,6 +109,7 @@ void wait_for_admission_response(char department_id) {
   char buffer[MAXDATASIZE] = "";
   int numbytes = 0;
   struct sockaddr_storage their_addr;
+  bool udp_ip_displayed = false;
   socklen_t addr_len;
   
   int rv;
@@ -150,6 +151,11 @@ void wait_for_admission_response(char department_id) {
       break;
     }
     
+    if (!udp_ip_displayed) {
+      dm->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
+      udp_ip_displayed = true;
+    }
+    
     if (numbytes > 0) {
       buffer[numbytes] = '\0';
       if (PROJ_DEBUG) {
@@ -162,11 +168,18 @@ void wait_for_admission_response(char department_id) {
         }
         
         break;
+      } else {
+        char element[MAXDATASIZE];
+        strncpy(element, buffer, 8);
+        element[8] = '\0';
+        
+        dm->display_student_admitted(element);
       }
     }
   }
   
   close(sockfd);
+  dm->display_phase2_completed();
 }
 
 int connect_to_admission_server(DepartmentParser *dp, char dept_name) {

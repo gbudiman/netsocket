@@ -1,4 +1,3 @@
 GPA:4.0
-Interest1:C1
-Interest2:C2
-Interest3:X2
+Interest1:A4
+Interest2:A5

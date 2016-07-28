@@ -44,6 +44,9 @@ void make_admission_decision() {
 }
 
 void create_udp_and_process() {
+  std::ofstream f;
+  f.open(DATABASE_FILE, std::ios::app);
+  
   //for (int s = 0; s < NUM_STUDENTS; s++) {
   for (std::vector<std::string>::iterator d = db->decision->begin(); d != db->decision->end(); ++d) {
     
@@ -87,7 +90,7 @@ void create_udp_and_process() {
           std::cerr << "talker -> student: failed to bind socket\n";
         }
       } else if (token_position == 1) {
-        numbytes = sendto(sockfd, decision_s, strlen(decision_s), 0, p->ai_addr, p->ai_addrlen);
+        numbytes = sendto(sockfd, &(decision_s[2]), strlen(decision_s) - 2, 0, p->ai_addr, p->ai_addrlen);
         
         if (PROJ_DEBUG) {
           std::cout << "Message to student " << student_id << ": " << decision_s << "\n";
@@ -96,9 +99,14 @@ void create_udp_and_process() {
         
         numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
         
+        am->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
+        am->display_student_admission_result((char) student_id + 0x30);
         if (PROJ_DEBUG) {
           std::cout << "End of transmission to student " << student_id << "\n";
         }
+        
+        f << &(decision_s[2]);
+        f << "\n";
         
         freeaddrinfo(servinfo);
         close(sockfd);
@@ -130,11 +138,9 @@ void create_udp_and_process() {
         }
         
         for (p = servinfo; p != NULL; p = p->ai_next) {
-          
           if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
             continue;
           }
-          
           break;
         }
       
@@ -144,6 +150,8 @@ void create_udp_and_process() {
         
         numbytes = sendto(sockfd, message_s, strlen(message_s), 0, p->ai_addr, p->ai_addrlen);
         
+        am->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
+        am->display_department_admission_result(department_id);
         if (numbytes == -1) {
           perror("talker: sendto -> department");
         }
@@ -154,6 +162,7 @@ void create_udp_and_process() {
           std::cout << numbytes << " bytes: " << message_s << "\n";
         }
         
+        f << message_s << "\n";
         close(sockfd);
       }
       
@@ -200,6 +209,9 @@ void create_udp_and_process() {
     freeaddrinfo(servinfo);
     close(sockfd);
   }
+  
+  am->display_phase2_completed();
+  f.close();
 }
 
 void create_tcp_and_process() {

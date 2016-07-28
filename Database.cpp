@@ -178,10 +178,21 @@ void Database::make_decision() {
         std::string program_application = *p;
         float min_gpa = department_programs->at(*p);
         
-        if (student_gpa >= min_gpa) {
+        int min_gpa_rd = round(min_gpa * 10);
+        int student_gpa_rd = round(student_gpa * 10);
+        
+        if (PROJ_DEBUG) {
+          std::cout << student_id << ": " << student_gpa_rd << " >=? " << min_gpa_rd << "\n";
+        }
+        
+        if (student_gpa_rd >= min_gpa_rd) {
           std::string dec_s = "";
           dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p[0];
           decision->push_back(dec_s);
+          
+          if (PROJ_DEBUG) {
+            std::cout << "   Accept: " << p[0] << "\n";
+          }
           admitted = true;
         }
       }

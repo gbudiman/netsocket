@@ -15,7 +15,10 @@ public:
   StudentMessenger();
   void set_student_name(int);
   void display_tcp_ip(std::string, std::string);
+  void display_udp_ip(std::string, std::string);
+  void display_received_application_result();
   void display_all_applications_sent();
+  void display_p2_end();
 private:
   void display(int);
   void display(int, std::vector<std::string>*);

@@ -17,8 +17,25 @@ void StudentMessenger::display_tcp_ip(std::string port, std::string ip_address) 
   display(SMSG_P2_TCP_START, args);
 }
 
+void StudentMessenger::display_udp_ip(std::string port, std::string ip_address) {
+  std::vector<std::string> *args = new std::vector<std::string>();
+  
+  args->push_back(ip_address);
+  args->push_back(port);
+  
+  display(SMSG_P2_UDP_START, args);
+}
+
+void StudentMessenger::display_received_application_result() {
+  display(SMSG_RECEIVED_RESULT);
+}
+
 void StudentMessenger::display_all_applications_sent() {
   display(SMSG_APPLICATION_COMPLETED);
+}
+
+void StudentMessenger::display_p2_end() {
+  display(SMSG_P2_END);
 }
 
 void StudentMessenger::display(int type) {
@@ -35,6 +52,15 @@ void StudentMessenger::display(int type, std::vector<std::string> *args) {
       break;
     case SMSG_RECEIVED_REPLY:
       std::cout << "Student" << student_name << " has received the reply from the admission office\n";
+      break;
+    case SMSG_P2_UDP_START:
+      std::cout << "Student" << student_name << " has UDP port " << args->at(1) << " and IP address " << args->at(0) << "\n";
+      break;
+    case SMSG_RECEIVED_RESULT:
+      std::cout << "Student" << student_name << " has received application result\n";
+      break;
+    case SMSG_P2_END:
+      std::cout << "End of phase 2 for Student" << student_name << "\n";
       break;
   }
 }

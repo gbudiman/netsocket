@@ -9,7 +9,7 @@
 #ifndef main_h
 #define main_h
 
-#define PROJ_DEBUG 1
+#define PROJ_DEBUG 0
 #define DISABLE_PHASE_1 0
 #define ENABLE_PHASE_2 1
 

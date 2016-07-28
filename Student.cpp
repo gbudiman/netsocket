@@ -125,12 +125,15 @@ void wait_for_admission_response(uint32_t student_id) {
           std::cout << "ADM_END received. Terminating process\n";
         }
         
+        sm->display_udp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
+        sm->display_received_application_result();
         break;
       }
     }
   }
   
   close(sockfd);
+  sm->display_p2_end();
 }
 
 int connect_to_admission_server(StudentParser *sp, uint32_t student_id) {
