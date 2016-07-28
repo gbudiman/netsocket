@@ -4,6 +4,31 @@ Database::Database() {
   
 }
 
+bool Database::has_program(char *x) {
+  std::ifstream infile(DATABASE_FILE);
+  std::string line;
+  bool is_valid_program = false;
+  
+  while(std::getline(infile, line)) {
+    char name[3] = "";
+    if (line[0] == 'S') {
+      continue;
+    } else {
+      name[0] = line[0];
+      name[1] = line[1];
+      name[2] = '\0';
+      
+      if (strcmp((const char*) x, (const char*) name) == 0) {
+        is_valid_program = true;
+        break;
+      }
+    }
+  }
+  
+  infile.close();
+  return is_valid_program;
+}
+
 bool Database::check_is_complete(bool execute_build) {
   //sleep(2);
   std::set<std::string> *members = new std::set<std::string>();
@@ -33,6 +58,7 @@ bool Database::check_is_complete(bool execute_build) {
     return true;
   }
   
+  infile.close();
   return false;
 }
 
@@ -166,6 +192,7 @@ void Database::debug_database() {
 void Database::make_decision() {
   for (std::map<int, float>::iterator g = student_grades->begin(); g != student_grades->end(); ++g) {
     int student_id = g->first;
+    int matching_interest = 0;
     char student_id_s[MAXDATASIZE] = "";
     float student_gpa = g->second;
     bool admitted = false;
@@ -175,6 +202,7 @@ void Database::make_decision() {
     for (std::vector<std::string>::iterator p = student_interests->at(student_id)->begin(); p != student_interests->at(student_id)->end() && !admitted; ++p) {
       
       if (department_programs->find(*p) != department_programs->end()) {
+        matching_interest++;
         std::string program_application = *p;
         float min_gpa = department_programs->at(*p);
         
@@ -188,7 +216,6 @@ void Database::make_decision() {
         if (student_gpa_rd >= min_gpa_rd) {
           std::string dec_s = "";
           dec_s += (std::string) student_id_s + "#Accept#" + *p + "#department" + p->at(0);
-          std::cout << " --> " << dec_s << "\n";
           decision->push_back(dec_s);
           
           if (PROJ_DEBUG) {
@@ -199,7 +226,7 @@ void Database::make_decision() {
       }
     }
     
-    if (!admitted) {
+    if (!admitted && matching_interest > 0) {
       std::string dec_s = "";
       dec_s += (std::string) student_id_s + "#Reject";
       decision->push_back(dec_s);

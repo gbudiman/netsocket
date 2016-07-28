@@ -268,6 +268,7 @@ void create_tcp_and_process() {
 
     if (!fork()) {
       close(sockfd);
+      int matching_program = 0;
       
       while (1) {
         int receive_length = (int) recv(new_fd, receive_buffer, MAXDATASIZE - 1, 0);
@@ -308,7 +309,8 @@ void create_tcp_and_process() {
               case CLIENT_IS_STUDENT:
                 can_continue = handle_student_messages(new_fd,
                                                        r_msg,
-                                                       &current_student);
+                                                       &current_student,
+                                                       &matching_program);
                 break;
               case CLIENT_IS_DEPARTMENT:
                 can_continue = handle_department_messages(new_fd,
@@ -320,6 +322,14 @@ void create_tcp_and_process() {
             }
             
             if (can_continue == 0) {
+              if (tcp_client_type == CLIENT_IS_STUDENT) {
+                
+                if (matching_program == 0) {
+                  send(new_fd, "0", 1, 0);
+                } else {
+                  send(new_fd, "valid", 5, 0);
+                }
+              }
               break;
             }
           }
@@ -344,7 +354,7 @@ void create_tcp_and_process() {
   }
 }
 
-int handle_student_messages(int new_fd, std::string msg, char *current_student) {
+int handle_student_messages(int new_fd, std::string msg, char *current_student, int *matching_program) {
   if (strcmp(msg.c_str(), "TX_FIN") == 0) {
     if (PROJ_DEBUG) {
       std::cout << "TX_FIN signal received. Closing socket\n";
@@ -355,10 +365,14 @@ int handle_student_messages(int new_fd, std::string msg, char *current_student) 
   } else {
     int rand_wait = rand() % 500 + 500;
     usleep(rand_wait);
+    char interest[3] = "\0";
     
-    int psm_error = process_student_message(msg);
+    int psm_error = process_student_message(msg, interest);
     
     if (psm_error == 0) {
+      if (strlen(interest) > 0 && db->has_program(interest)) {
+        (*matching_program)++;
+      }
       *current_student = receive_buffer[0];
       
       if (send(new_fd, "ADM_RX_OK", 9, 0) == -1) {
@@ -409,7 +423,7 @@ int handle_department_messages(int new_fd, const char *msg, char *current_dept) 
   }
 }
 
-uint32_t process_student_message(std::string _buffer) {
+uint32_t process_student_message(std::string _buffer, char *interest_s) {
   char *element;
   uint32_t e_pos = 0;
   char *buffer = new char[_buffer.length() + 1];
@@ -430,9 +444,13 @@ uint32_t process_student_message(std::string _buffer) {
         break;
       case 1:
         if (strcmp(element, "GPA") == 0) {
+          interest_s[0] = '\0';
           parse_gpa = true;
         } else {
           interest = element;
+          interest_s[0] = element[0];
+          interest_s[1] = element[1];
+          interest_s[2] = '\0';
           if (PROJ_DEBUG) {
             std::cout << "Capture interest of Student " << student_id << ": " << interest << "\n";
           }

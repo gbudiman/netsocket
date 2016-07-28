@@ -24,12 +24,12 @@ void make_admission_decision();
 
 std::string debug_receive_buffer(char*, int);
 uint32_t process_department_message(std::string);
-uint32_t process_student_message(std::string);
+uint32_t process_student_message(std::string, char*);
 
 bool check_department_completion(int*, int*);
 
 int handle_department_messages(int, const char*, char*);
-int handle_student_messages(int, std::string, char*);
+int handle_student_messages(int, std::string, char*, int*);
 AdmissionMesseger *am = new AdmissionMesseger();
 
 std::map<std::string, float> *database;

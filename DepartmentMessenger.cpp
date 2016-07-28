@@ -70,7 +70,7 @@ void DepartmentMessenger::display(int type, std::vector<std::string> *args) {
   const char *d = department_name.c_str();
   switch(type) {
     case DMSG_P1_START:
-      std::cout << "Department " << d
+      std::cout << "Department" << d
       << " has TCP port " << args->at(1)
       << " and IP " << args->at(0) << "\n";
       break;

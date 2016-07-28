@@ -50,8 +50,11 @@ void do_work(uint32_t id) {
   StudentParser *sp = new StudentParser(id);
   sm = new StudentMessenger();
   sm->set_student_name(id);
-  connect_to_admission_server(sp, id);
-  wait_for_admission_response(id);
+  int wait_for_admission = connect_to_admission_server(sp, id);
+  
+  if (wait_for_admission == 1) {
+    wait_for_admission_response(id);
+  }
   
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " returned\n";
@@ -140,15 +143,18 @@ void wait_for_admission_response(uint32_t student_id) {
 int connect_to_admission_server(StudentParser *sp, uint32_t student_id) {
   int sockfd = Socket::create_socket(TCP_CLIENT);
   sm->display_tcp_ip(Socket::get_socket_port(sockfd), Socket::get_self_ip_address());
-  send_data_to_admission_server(student_id, sockfd, sp);
+  int proceed_to_wait_decision = send_data_to_admission_server(student_id, sockfd, sp);
   sm->display_all_applications_sent();
   close(sockfd);
-  return 0;
+  
+  return proceed_to_wait_decision;
 }
 
 int send_data_to_admission_server(int student_id, int sockfd, StudentParser *sp) {
   char s_msg[MAXDATASIZE];
   char adm_resp[MAXDATASIZE];
+  int numbytes = 0;
+  int proceed_to_wait_decision = 0;
   
   sprintf(s_msg, "I_AM_STUDENT#%d", student_id);
   send(sockfd, s_msg, strlen(s_msg), 0);
@@ -198,6 +204,15 @@ int send_data_to_admission_server(int student_id, int sockfd, StudentParser *sp)
   sprintf(s_msg, "TX_FIN");
   send(sockfd, s_msg, strlen(s_msg), 0);
   
+  while(1) {
+    numbytes = recv(sockfd, adm_resp, sizeof(adm_resp), 0);
+    adm_resp[numbytes] = '\0';
+    
+    if (strcmp(adm_resp, "valid") == 0) {
+      proceed_to_wait_decision = 1;
+    }
+    break;
+  }
   
-  return 0;
+  return proceed_to_wait_decision;
 }

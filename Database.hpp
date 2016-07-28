@@ -10,6 +10,7 @@ public:
   Database();
   bool check_is_complete();
   bool check_is_complete(bool);
+  bool has_program(char *);
   void build();
   void make_decision();
   void debug_decision();

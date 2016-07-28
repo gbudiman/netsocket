@@ -48,7 +48,7 @@ void StudentMessenger::display(int type, std::vector<std::string> *args) {
       std::cout << "Student" << student_name << " has TCP port " << args->at(1) << " and IP address " << args->at(0) << "\n";
       break;
     case SMSG_APPLICATION_COMPLETED:
-      std::cout << "Completed sending application for " << student_name << "\n";
+      std::cout << "Completed sending application for Student" << student_name << "\n";
       break;
     case SMSG_RECEIVED_REPLY:
       std::cout << "Student" << student_name << " has received the reply from the admission office\n";
