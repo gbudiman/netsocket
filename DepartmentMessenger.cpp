@@ -72,7 +72,7 @@ void DepartmentMessenger::display(int type, std::vector<std::string> *args) {
     case DMSG_P1_START:
       std::cout << "Department" << d
       << " has TCP port " << args->at(1)
-      << " and IP " << args->at(0) << "\n";
+      << " and IP address " << args->at(0) << "\n";
       break;
     case DMSG_ADM_CONNECTED:
       std::cout << "Department" << d << " is now connected to the admission office\n";

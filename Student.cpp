@@ -56,6 +56,8 @@ void do_work(uint32_t id) {
     wait_for_admission_response(id);
   }
   
+  sm->display_p2_end();
+  
   if (PROJ_DEBUG) {
     std::cout << "Process " << ::getpid() << " returned\n";
   }
@@ -137,7 +139,6 @@ void wait_for_admission_response(uint32_t student_id) {
   }
   
   close(sockfd);
-  sm->display_p2_end();
 }
 
 int connect_to_admission_server(StudentParser *sp, uint32_t student_id) {

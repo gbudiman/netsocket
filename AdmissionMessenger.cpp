@@ -89,7 +89,7 @@ void AdmissionMesseger::display(int type, std::vector<std::string> *args) {
     case AMSG_P1_START:
     case AMSG_P2_START:
       std::cout << "The admission office has TCP port " << args->at(1)
-      << " and IP " << args->at(0) << "\n";
+      << " and IP address " << args->at(0) << "\n";
       break;
     case AMSG_DEPT_COMPLETED:
       std::cout << "Received the program list from Department" << args->at(0) << "\n";
