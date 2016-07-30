@@ -87,7 +87,7 @@ void wait_for_admission_response(uint32_t student_id) {
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_flags = AI_PASSIVE;
   
-  if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+  if ((rv = getaddrinfo(LOCAL, port_s, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
   }
   

@@ -116,7 +116,7 @@ void wait_for_admission_response(char department_id) {
   hints.ai_flags = AI_PASSIVE;
   
   // Setup UDP socket
-  if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+  if ((rv = getaddrinfo(LOCAL, port_s, &hints, &servinfo)) != 0) {
     std::cerr << "getaddrinfo: " << gai_strerror(rv);
   }
   

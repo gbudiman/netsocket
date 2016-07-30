@@ -35,6 +35,7 @@
 
 // Server address
 #define SERVER "localhost"
+#define LOCAL "localhost"
 
 // And just some readability
 #define TCP_CLIENT 1

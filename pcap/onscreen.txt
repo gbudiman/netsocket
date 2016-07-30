@@ -1,0 +1,93 @@
+////////////////////////
+// Admission
+////////////////////////
+nunki.usc.edu(12): ./Admission 
+The admission office has TCP port 3950 and IP address 68.181.201.3
+Received the program list from DepartmentA
+Received the program list from DepartmentC
+Received the program list from DepartmentB
+Admission office receive the application from Student1
+Admission office receive the application from Student2
+Admission office receive the application from Student3
+Admission office receive the application from Student5
+Admission office receive the application from Student4
+End of Phase 1 for the admission office
+The admission office has TCP port 3950 and IP address 68.181.201.3
+The admission office has UDP port 58485 and IP 68.181.201.3 for Phase 2
+The admission office has send the application result to Student1
+The admission office has UDP port 58486 and IP 68.181.201.3 for Phase 2
+The admission office has send the application result to Student2
+The admission office has UDP port 58487 and IP 68.181.201.3 for Phase 2
+The admission office has send the application result to Student3
+The admission office has UDP port 58488 and IP 68.181.201.3 for Phase 2
+The admission office has send the application result to Student4
+The admission office has UDP port 58489 and IP 68.181.201.3 for Phase 2
+The admission office has send one admitted student to DepartmentA
+The admission office has UDP port 58490 and IP 68.181.201.3 for Phase 2
+The admission office has send one admitted student to DepartmentB
+The admission office has UDP port 58491 and IP 68.181.201.3 for Phase 2
+The admission office has send one admitted student to DepartmentC
+End of Phase 2 for the admission office
+
+////////////////////////
+// Department
+////////////////////////
+nunki.usc.edu(2): ./Department 
+DepartmentC has TCP port 65384 and IP address 68.181.201.3
+DepartmentC is now connected to the admission office
+DepartmentB has TCP port 65385 and IP address 68.181.201.3
+DepartmentB is now connected to the admission office
+DepartmentA has TCP port 65383 and IP address 68.181.201.3
+DepartmentA is now connected to the admission office
+DepartmentA has sent A1 to the admission office
+DepartmentA has sent A2 to the admission office
+DepartmentA has sent A3 to the admission office
+Updating the admission office is done for Department A
+End of Phase 1 for Department A
+DepartmentC has sent C1 to the admission office
+DepartmentC has sent C2 to the admission office
+DepartmentC has sent C3 to the admission office
+Updating the admission office is done for Department C
+End of Phase 1 for Department C
+DepartmentB has sent B1 to the admission office
+DepartmentB has sent B2 to the admission office
+DepartmentB has sent B3 to the admission office
+Updating the admission office is done for Department B
+End of Phase 1 for Department B
+DepartmentA has UDP port 21750 and IP 68.181.201.3
+Student1 has been admitted to DepartmentA
+End of Phase 2 for DepartmentA
+DepartmentB has UDP port 21850 and IP 68.181.201.3
+Student3 has been admitted to DepartmentB
+End of Phase 2 for DepartmentB
+DepartmentC has UDP port 21950 and IP 68.181.201.3
+Student2 has been admitted to DepartmentC
+End of Phase 2 for DepartmentC
+
+////////////////////////
+// Student
+////////////////////////
+nunki.usc.edu(2): ./Student 
+Student1 has TCP port 65389 and IP address 68.181.201.3
+Student2 has TCP port 65390 and IP address 68.181.201.3
+Student3 has TCP port 65391 and IP address 68.181.201.3
+Student5 has TCP port 65392 and IP address 68.181.201.3
+Student4 has TCP port 65393 and IP address 68.181.201.3
+Completed sending application for Student1
+Completed sending application for Student2
+Completed sending application for Student3
+Completed sending application for Student5
+End of phase 2 for Student5
+Completed sending application for Student4
+Student1 has UDP port 22050 and IP address 68.181.201.3
+Student1 has received application result
+End of phase 2 for Student1
+Student2 has UDP port 22150 and IP address 68.181.201.3
+Student2 has received application result
+End of phase 2 for Student2
+Student3 has UDP port 22250 and IP address 68.181.201.3
+Student3 has received application result
+End of phase 2 for Student3
+Student4 has UDP port 22350 and IP address 68.181.201.3
+Student4 has received application result
+End of phase 2 for Student4
