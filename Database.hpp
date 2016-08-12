@@ -17,6 +17,7 @@ public:
   
   std::map<int, float> *student_grades;
   std::vector<std::string> *decision;
+  std::set<char> *participating_departments;
 private:
   void process_student_data(std::string);
   void process_department_data(std::string);

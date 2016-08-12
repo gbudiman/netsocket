@@ -1,4 +1,4 @@
-GPA:2.9
-Interest1:D1
-Interest2:B1
-Interest3:B2
+GPA:4.0
+Interest1:D5
+Interest2:D3
+Interest3:D8

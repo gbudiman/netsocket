@@ -172,6 +172,8 @@ void create_udp_and_process() {
   }
   
   // Now send decisions to each Departments
+  // Note: this does NOT tell all Departments to close their socket
+  //       only those who receive admission message
   for (std::map<char, std::vector<char*> >::iterator d = department_admission_messages.begin(); d != department_admission_messages.end(); ++d) {
     char port_s[MAXDATASIZE] = "";
     int rv;
@@ -230,10 +232,10 @@ void create_udp_and_process() {
     }
     
     // Tell Department to close their UDP socket
-    numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
-    if (PROJ_DEBUG) {
-      std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
-    }
+    //    numbytes = sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
+    //    if (PROJ_DEBUG) {
+    //      std::cout << "Sent " << numbytes << " bytes to close UDP socket to port " << port_s << "\n";
+    //    }
     
     close(sockfd);
     freeaddrinfo(servinfo);
@@ -241,8 +243,46 @@ void create_udp_and_process() {
     usleep(250);
   }
   
+  tell_all_departments_to_close_socket();
   am->display_phase2_completed();
   f.close();
+}
+
+void tell_all_departments_to_close_socket() {
+  for (std::set<char>::iterator d = db->participating_departments->begin(); d != db->participating_departments->end(); ++d) {
+    
+    if (PROJ_DEBUG) {
+      std::cout << "Sending close command to " << *d << "\n";
+    }
+    
+    char port_s[MAXDATASIZE] = "";
+    int rv;
+    int sockfd = 0;
+    struct addrinfo hints, *servinfo, *p;
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    
+    sprintf(port_s, "%d", DEPARTMENT_BASE_UDP_PORT + 100 * (*d - 0x41));
+    
+    if ((rv = getaddrinfo(SERVER, port_s, &hints, &servinfo)) != 0) {
+      std::cerr << "getaddrinfo talker -> department: " << gai_strerror(rv);
+    }
+    
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+      if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        continue;
+      }
+      break;
+    }
+    
+    if (p == NULL) {
+      std::cerr << "talker -> department: failed to bind socket\n";
+    }
+    
+    sendto(sockfd, "ADM_END", 7, 0, p->ai_addr, p->ai_addrlen);
+  }
 }
 
 // TCP communications

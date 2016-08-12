@@ -21,6 +21,7 @@ void create_empty_database_file();
 void create_tcp_and_process();
 void create_udp_and_process();
 void make_admission_decision();
+void tell_all_departments_to_close_socket();
 
 std::string debug_receive_buffer(char*, int);
 uint32_t process_department_message(std::string);

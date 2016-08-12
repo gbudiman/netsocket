@@ -75,6 +75,7 @@ void Database::build() {
   student_grades = new std::map<int, float>();
   student_interests = new std::map<int, std::vector<std::string>*>();
   department_programs = new std::map<std::string, float>();
+  participating_departments = new std::set<char>();
   decision = new std::vector<std::string>();
   
   check_is_complete(true);
@@ -166,6 +167,7 @@ void Database::process_department_data(std::string x) {
     switch(e_pos) {
       case 0:
         dept_program = element;
+        participating_departments->insert(element[0]);
         break;
       case 1:
         dept_program_min_gpa = std::atof(element);
